@@ -1326,6 +1326,12 @@ document.addEventListener("keydown", (ev) => {
   setTimeout(leave, calm ? 1600 : 2750);
 })();
 
+// Closing the window closes the app: say goodbye so it can stop. A reload says
+// goodbye too, but asks for data again at once, so the app stays.
+addEventListener("pagehide", () => {
+  try { navigator.sendBeacon("/api/bye"); } catch (err) { /* nothing to tell */ }
+});
+
 // Use the pilot's own emblem if one sits beside stacker.py.
 const probe = new Image();
 probe.onload = () => { $("emblem").innerHTML = '<img src="/emblem" alt="">'; };

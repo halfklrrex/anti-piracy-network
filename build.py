@@ -37,12 +37,12 @@ def data(source, target):
 def main():
     # Build scratch goes to a temporary folder, not beside the source (which
     # may be a synced folder that would upload every intermediate file).
-    work = Path(tempfile.mkdtemp(prefix="massacre-stack-build-"))
+    work = Path(tempfile.mkdtemp(prefix="iapn-build-"))
     icon = work / "emblem.ico"
     png_to_ico(HERE / "emblem.png", icon)
     subprocess.run([
         sys.executable, "-m", "PyInstaller",
-        "--onefile", "--console", "--noconfirm", "--clean",
+        "--onefile", "--windowed", "--noconfirm", "--clean",
         "--name", NAME,
         "--icon", str(icon),
         "--distpath", str(HERE / "dist"),

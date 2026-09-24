@@ -35,7 +35,9 @@ screen is traceable to a journal event.
 
 - Local only: `stacker.py` (Python standard library) tails the journal folder
   and serves `dashboard.html` at http://127.0.0.1:8765, polled once a second.
-- Viewed by alt-tab on the same monitor as the game, usually mid-session.
+- Viewed by alt-tab on the same monitor as the game, usually mid-session, in a
+  window of its own (an Edge app window with a dedicated profile); closing the
+  window quits the app. The packaged .exe has no console window.
 - Journal folder: `%USERPROFILE%\Saved Games\Frontier Developments\Elite Dangerous`.
 
 ## Capabilities and Constraints

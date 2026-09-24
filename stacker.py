@@ -18,6 +18,8 @@ import argparse
 import json
 import math
 import os
+import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -1508,6 +1510,8 @@ def already_running(port):
 
 class Handler(BaseHTTPRequestHandler):
     tracker = None
+    last_seen = 0.0       # when a dashboard last asked for data
+    bye_at = 0.0          # when a dashboard said it was closing
 
     def log_message(self, *args):
         pass
@@ -1524,6 +1528,14 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+    def do_POST(self):
+        # The dashboard says goodbye as its window closes (or reloads).
+        if urlparse(self.path).path == "/api/bye":
+            Handler.bye_at = time.time()
+            self._send(204, b"", "text/plain")
+        else:
+            self._send(404, "not found", "text/plain; charset=utf-8")
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -1564,6 +1576,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, "no such font", "text/plain; charset=utf-8")
 
         elif route in ("/api/state", "/api/refresh"):
+            Handler.last_seen = time.time()
             if route == "/api/refresh":
                 # Re-read the journal right now instead of waiting for the
                 # background poll, so the button does something real.
@@ -1613,19 +1626,117 @@ def watcher(tracker, interval=1.0):
 # --------------------------------------------------------------------------
 
 def fail(*lines):
-    """Explain why we're stopping. Double-clicked, the .exe's window would
-    close before anyone could read it, so it waits for Enter."""
-    for line in lines:
-        print(line)
-    if FROZEN:
-        try:
-            input("\nPress Enter to close this window.")
-        except EOFError:                  # started without a console to read
-            pass
+    """Explain why we're stopping: in a dialog when there's no console to
+    print to (the packaged app has none), otherwise on the console."""
+    if sys.stdout is None and os.name == "nt":
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(None, "\n".join(lines), APP_NAME, 0x10)
+    else:
+        for line in lines:
+            print(line)
     return 1
 
 
+def borrow_console():
+    """The packaged app has no console window. For the text commands
+    (--console, --verify, --help) it borrows the terminal it was started
+    from, or opens one of its own. Returns True when it opened its own."""
+    if sys.stdout is not None or os.name != "nt":
+        return False
+    import ctypes
+    kernel = ctypes.windll.kernel32
+    attached = bool(kernel.AttachConsole(-1))       # the terminal we were run from
+    if not attached:
+        kernel.AllocConsole()
+    sys.stdout = sys.stderr = open("CONOUT$", "w", encoding="utf-8", errors="replace")
+    sys.stdin = open("CONIN$", encoding="utf-8")
+    return not attached
+
+
+def app_browser():
+    """Edge or Chrome: they can show a page as a window of its own, with no
+    tabs or address bar. Edge ships with every copy of Windows."""
+    if os.name == "nt":
+        import winreg
+        for exe in ("msedge.exe", "chrome.exe"):
+            for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+                try:
+                    key = rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{exe}"
+                    with winreg.OpenKey(hive, key) as handle:
+                        path = winreg.QueryValue(handle, None)
+                    if path and Path(path).is_file():
+                        return path
+                except OSError:
+                    continue
+        for base in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles"),
+                     os.environ.get("LOCALAPPDATA")):
+            for rel in (r"Microsoft\Edge\Application\msedge.exe", r"Google\Chrome\Application\chrome.exe"):
+                if base and Path(base, rel).is_file():
+                    return str(Path(base, rel))
+        return None
+    for mac in ("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"):
+        if Path(mac).is_file():
+            return mac
+    for name in ("microsoft-edge", "google-chrome", "chromium", "chromium-browser"):
+        if shutil.which(name):
+            return shutil.which(name)
+    return None
+
+
+def open_window(url, tab=False):
+    """Show the dashboard as its own app window, or as a browser tab when
+    asked to or when no suitable browser is installed. Returns the window's
+    browser process when there is one to watch."""
+    browser = None if tab else app_browser()
+    if browser:
+        # A profile of its own keeps the window separate from your browsing
+        # (and remembers its size and place), and makes the browser process
+        # ours, so we can tell when the window has been closed.
+        base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
+        profile = Path(base) / APP_NAME / "window"
+        try:
+            profile.mkdir(parents=True, exist_ok=True)
+            return subprocess.Popen(
+                [browser, f"--app={url}", f"--user-data-dir={profile}", "--window-size=1440,900",
+                 "--no-first-run", "--no-default-browser-check"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            pass
+    webbrowser.open(url)
+    return None
+
+
+def close_with_window(server, window):
+    """Stop when the dashboard is closed, like any other app: when the page
+    says goodbye and nothing asks for data again (a reload asks at once), or
+    when the window's own browser process ends."""
+    opened = time.time()
+    while True:
+        time.sleep(1)
+        now = time.time()
+        quiet = now - Handler.last_seen > 4
+        said_bye = Handler.bye_at and now - Handler.bye_at > 4 and Handler.last_seen < Handler.bye_at
+        # A process that ends within seconds only handed the window to a
+        # browser that was already running; that isn't the window closing.
+        closed = window is not None and window.poll() is not None and now - opened > 10
+        if said_bye or (closed and quiet):
+            break
+    server.shutdown()
+
+
 def main():
+    own_console = False
+    if any(flag in sys.argv for flag in ("-h", "--help", "--console", "--verify")):
+        own_console = borrow_console()
+    try:
+        return run()
+    finally:
+        if own_console:
+            input("\nPress Enter to close.")
+
+
+def run():
     ap = argparse.ArgumentParser(prog=PROG, description=f"{APP_NAME}: Elite Dangerous massacre stacking")
     ap.add_argument("--journal-dir", help="path to the Elite Dangerous journal folder")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
@@ -1634,7 +1745,10 @@ def main():
     ap.add_argument("--verify", action="store_true", help="check kill counting against history")
     ap.add_argument("--any-system", action="store_true",
                     help="count kills regardless of which system they happened in")
-    ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--tab", action="store_true",
+                    help="open in your usual browser as a tab, not in a window of its own")
+    ap.add_argument("--no-browser", action="store_true",
+                    help="don't open anything; keep serving until stopped")
     args = ap.parse_args()
     url = f"http://127.0.0.1:{args.port}/"
 
@@ -1642,7 +1756,7 @@ def main():
     if not (args.verify or args.console) and already_running(args.port):
         print(f"{APP_NAME} is already running at {url}")
         if not args.no_browser:
-            webbrowser.open(url)
+            open_window(url, tab=args.tab)
         return 0
 
     journal_dir = find_journal_dir(args.journal_dir)
@@ -1678,14 +1792,16 @@ def main():
 
     print()
     print(f"  {APP_NAME} running at {url}")
-    print("  Leave this window open. Press Ctrl+C to stop.")
+    print("  Close its window to stop (or press Ctrl+C here).")
     print()
     if not args.no_browser:
-        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
+        window = open_window(url, tab=args.tab)
+        threading.Thread(target=close_with_window, args=(server, window), daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopped.")
+        pass
+    print("Stopped.")
     return 0
 
 

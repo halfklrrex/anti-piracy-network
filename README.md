@@ -15,11 +15,17 @@ commander.
 ## Download
 
 **Windows:** get `Imperial Anti-Piracy Network.exe` from the [Releases](../../releases) page
-and double-click it. Nothing to install. The dashboard opens in your browser at
-<http://127.0.0.1:8765/> and updates about once a second while you play. Each launch
-opens with a short welcome from the Imperial Anti-Piracy Network (click or press
-any key to skip it). Leave the black window open; close it to stop. Opening the
-.exe again while it's running just brings the dashboard back up.
+and double-click it. Nothing to install. It opens in a window of its own and
+updates about once a second while you play; each launch starts with a short
+welcome from the Imperial Anti-Piracy Network (click or press any key to skip
+it). **Close the window to quit.** Opening the .exe again while it's running just
+opens another window onto it.
+
+The window is a Microsoft Edge app window (Edge ships with Windows), with its own
+profile so it stays out of your normal browsing and remembers its size and
+place. Without Edge or Chrome it opens as a tab in your usual browser instead;
+`--tab` does that on purpose. Either way the dashboard is also at
+<http://127.0.0.1:8765/> while the app runs.
 
 The .exe isn't code-signed, so Windows may say it's from an unknown publisher.
 Choose **More info → Run anyway**.
@@ -179,7 +185,9 @@ mission is 3 days past its deadline, its line turns amber.
 ## Options
 
 ```bash
-"Imperial Anti-Piracy Network.exe" --console      # one-shot text summary, no browser
+"Imperial Anti-Piracy Network.exe" --tab          # open as a browser tab, not a window
+"Imperial Anti-Piracy Network.exe" --no-browser   # open nothing; run until stopped
+"Imperial Anti-Piracy Network.exe" --console      # one-shot text summary, no window
 "Imperial Anti-Piracy Network.exe" --verify       # every past completion: logged vs. corrected
 "Imperial Anti-Piracy Network.exe" --port 8790    # a different port
 "Imperial Anti-Piracy Network.exe" --days 60      # scan further back (default 30)
@@ -187,7 +195,8 @@ mission is 3 days past its deadline, its line turns amber.
 "Imperial Anti-Piracy Network.exe" --journal-dir "D:\path\to\Elite Dangerous"
 ```
 
-From source, use `python stacker.py` in place of the .exe.
+Run these from a terminal (Command Prompt or PowerShell); the text commands
+print there. From source, use `python stacker.py` in place of the .exe.
 
 ## Make it yours
 
