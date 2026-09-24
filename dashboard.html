@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Imperial Anti-Piracy Network</title>
+<title>Her Imperial Majesty’s Anti-Piracy Network</title>
 <link rel="icon" href="/emblem">
 <style>
   /* Saira (SIL OFL, fonts/OFL.txt), served by stacker.py from fonts/ so the page
@@ -75,7 +75,7 @@
   .emblem img { width: 100%; height: 100%; object-fit: contain; }
   .wordmark { display: flex; flex-direction: column; gap: 2px; }
   .wordmark h1 { font: 500 13.5px/1 var(--display); letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; }
-  .wordmark h1 small { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600; letter-spacing: .3em; color: var(--label-3); }
+  .wordmark h1 small { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600; letter-spacing: .24em; color: var(--label-3); }
   .status { display: flex; align-items: center; gap: 18px; font-size: 13px; color: var(--label-2); min-width: 0; }
   .status b { color: var(--label); font-weight: 600; }
   .status > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -416,6 +416,7 @@
     .hist li > .per-hour { display: block; }
     .status .place-now, .tools .label { display: none; }
     .wordmark h1 { letter-spacing: .12em; }
+    .wordmark h1 small { letter-spacing: .19em; }
     .big { font-size: 80px; }
     .stack-head { padding: 18px 16px 12px; }
     .says { padding: 0 16px 14px; }
@@ -468,7 +469,8 @@
     animation: welcome-sheen 1s 1.05s ease-in-out both;
   }
   .welcome-org { margin-top: 24px; font-size: 11px; font-weight: 600; letter-spacing: .3em; text-transform: uppercase;
-    color: var(--label-3); animation: welcome-track .9s .7s var(--ease-out) both; }
+    line-height: 1.7; color: var(--label-3); animation: welcome-track .9s .7s var(--ease-out) both; }
+  .welcome-org span { display: block; white-space: nowrap; }
   .welcome-title { margin-top: 10px; font-size: 26px; font-weight: 600; line-height: 1.15; }
   .welcome-title span { display: inline-block; animation: welcome-word .75s var(--ease-out) both; }
   .welcome-title span:first-child { animation-delay: .85s; }
@@ -548,7 +550,7 @@
         <svg viewBox="0 0 64 64" hidden><use href="#i-eagle"/></svg>
       </div>
     </div>
-    <p class="welcome-org">Imperial Anti-Piracy Network</p>
+    <p class="welcome-org"><span>Her Imperial Majesty’s</span> <span>Anti-Piracy Network</span></p>
     <h2 class="welcome-title"><span>Welcome,</span> <span>Commander</span></h2>
     <p class="welcome-name" id="welcomeName"></p>
     <i class="welcome-rule"></i>
@@ -560,7 +562,7 @@
     <div class="emblem" id="emblem" title="Arissa Lavigny-Duval">
       <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#i-eagle"/></svg>
     </div>
-    <div class="wordmark"><h1><small>Imperial</small>Anti-Piracy Network</h1></div>
+    <div class="wordmark"><h1><small>Her Imperial Majesty’s</small>Anti-Piracy Network</h1></div>
   </div>
   <div class="status">
     <span class="live" id="live"><i></i><span id="liveText">Live</span></span>

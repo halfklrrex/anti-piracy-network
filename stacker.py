@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Imperial Anti-Piracy Network: a massacre-stacking dashboard for Elite Dangerous.
+"""Her Imperial Majesty's Anti-Piracy Network: a massacre-stacking dashboard for Elite Dangerous.
 
 Reads your Elite Dangerous journal, finds every active massacre mission, groups
 them by target faction, target type and system, and works out how many kills
@@ -38,8 +38,11 @@ APP_DIR = Path(sys.executable if FROZEN else __file__).resolve().parent
 # Where the files that ship with the app live (dashboard.html, fonts/, the
 # emblem). The packaged .exe unpacks them to a temporary folder at start.
 RES_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
-APP_NAME = "Imperial Anti-Piracy Network"
-PROG = f'"{APP_NAME}.exe"' if FROZEN else "python stacker.py"
+APP_NAME = "Her Imperial Majesty's Anti-Piracy Network"
+# Files keep the short name: the .exe, and the window's own browser profile
+# (renaming that would forget the window's size and place).
+APP_FILE = "Imperial Anti-Piracy Network"
+PROG = f'"{APP_FILE}.exe"' if FROZEN else "python stacker.py"
 DEFAULT_PORT = 8765
 MASSACRE_PREFIX = "Mission_Massacre"
 
@@ -1802,7 +1805,7 @@ def open_window(url, tab=False):
         # (and remembers its size and place), and makes the browser process
         # ours, so we can tell when the window has been closed.
         base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
-        profile = Path(base) / APP_NAME / "window"
+        profile = Path(base) / APP_FILE / "window"
         try:
             profile.mkdir(parents=True, exist_ok=True)
             return subprocess.Popen(

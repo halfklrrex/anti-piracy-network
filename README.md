@@ -1,4 +1,4 @@
-# Imperial Anti-Piracy Network
+# Her Imperial Majesty's Anti-Piracy Network
 
 A live dashboard for pirate-massacre stacking in **Elite Dangerous**. It reads
 your game journal while you play and shows how many kills your stack really
@@ -17,7 +17,7 @@ commander.
 **Windows:** get `Imperial Anti-Piracy Network.exe` from the [Releases](../../releases) page
 and double-click it. Nothing to install. It opens in a window of its own and
 updates about once a second while you play; each launch starts with a short
-welcome from the Imperial Anti-Piracy Network (click or press any key to skip
+welcome from Her Imperial Majesty's Anti-Piracy Network (click or press any key to skip
 it). **Close the window to quit.** Opening the .exe again while it's running just
 opens another window onto it.
 

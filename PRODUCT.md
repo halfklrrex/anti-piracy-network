@@ -93,8 +93,10 @@ screen is traceable to a journal event.
   toolbar mark and the browser-tab icon. An original eagle mark stands in only
   if that file is removed.
 - Bounties are shown as accumulated income, never framed as "at risk".
-- The app is named "Imperial Anti-Piracy Network" (the commander's choice; it
-  replaced "Massacre Stack"), and each launch opens with a short "Welcome,
+- The app is named "Her Imperial Majesty's Anti-Piracy Network" (the
+  commander's choice; it replaced "Imperial Anti-Piracy Network", which before
+  that replaced "Massacre Stack"). Files keep the short name ("Imperial
+  Anti-Piracy Network.exe"). Each launch opens with a short "Welcome,
   Commander" card around the Arissa Lavigny-Duval emblem.
 - One typeface everywhere, Saira (the commander's pick over Space Grotesk, Outfit
   and Sora; serif faces were rejected as too fussy at small sizes). Bundled, never

@@ -1,5 +1,5 @@
 ---
-name: Imperial Anti-Piracy Network
+name: Her Imperial Majesty's Anti-Piracy Network
 description: An Imperial pilot's glance-and-go ledger for stacked massacre missions, in Apple Stocks/Weather dark grammar.
 colors:
   ground-top: "#140e1f"
@@ -86,7 +86,7 @@ typography:
     fontSize: "11px"
     fontWeight: 600
     lineHeight: 1
-    letterSpacing: ".3em"
+    letterSpacing: ".24em"
   welcome:
     fontFamily: "Saira, -apple-system, BlinkMacSystemFont, SF Pro Display, Segoe UI Variable Display, Segoe UI, system-ui, sans-serif"
     fontSize: "26px"
@@ -168,7 +168,7 @@ components:
     height: "6px"
 ---
 
-# Design System: Imperial Anti-Piracy Network
+# Design System: Her Imperial Majesty's Anti-Piracy Network
 
 Product truth, audience and brand commitments live in [PRODUCT.md](PRODUCT.md); this file is strictly visual. Everything below is recorded from the shipped `dashboard.html` (inline CSS on `:root`), not from the plan. Where the direction comment at the top of `<body>` and the build differ, the build is recorded.
 
@@ -236,7 +236,7 @@ A near-monochrome plum-dark system with a single violet voice and three state co
 - **Sentence** (400, 13.5px, 1.45, max 78ch): state sentences under a stack head.
 - **Label** (13px): key-value grids, meta lines, buttons (500), table cells. Values are 600 in `label`, keys 400 in `label-2`.
 - **Caption** (12 to 12.5px, `label-3` or `label-2`): hand-in lines, footnotes, ticker keys, column heads.
-- **Wordmark** (500, 13.5px, .16em tracking, uppercase; .12em at 720px and below): "Anti-Piracy Network" in the toolbar, with "Imperial" set above it as an eyebrow (600, 11px, .3em tracking, `label-3`), so the two-line lockup stays narrow enough for a phone-width toolbar.
+- **Wordmark** (500, 13.5px, .16em tracking, uppercase; .12em at 720px and below): "Anti-Piracy Network" in the toolbar, with "Her Imperial Majesty's" set above it as an eyebrow (600, 11px, .24em tracking, `label-3`; .19em at 720px and below), tracked so the two lines run the same width. The lockup stays narrow enough to share a phone-width toolbar row with the View and Refresh buttons.
 
 ### Named Rules
 **The Thin Numeral Rule.** Only the two kill counts are set at 300 weight and large; no other number competes with them. Every other figure is 13 to 15px at 600.
@@ -324,7 +324,7 @@ Every state is written, not badged: a 15px line icon, then a 13.5px sentence in 
 Each giver's queue opens with its name and standing on the left and, on the right, its kill total in `label-2` 13px. The pace-setting queue follows it with "sets the pace" in imperial violet; every other queue, while a mission slot is free, with "N free" in the same violet at the same place: the kills a further mission from that giver could need and still cost nothing. Both explain themselves on hover.
 
 ### Hero and Motion
-The summary column opens like Weather: the current system at 20px with a violet pin, the 96px thin kill count, a 17px condition line, a `label-2` sub line and a narrow note. When a kill lands, the count replays a 0.55s tick (rises 10px from .25 opacity through imperial violet to `label`) and the range fills grow from their previous value to the new one. The other authored motion is the welcome card, once per launch (a fresh browser tab): the dashboard blurs behind a card (a .45s veil, backdrop blur 16px); a 1.5px imperial reticle ring draws itself around the emblem in 1s with four cardinal ticks; a violet radial glow blooms behind it and a white sheen sweeps across the emblem, masked to its shape; the "Imperial Anti-Piracy Network" eyebrow tightens its tracking from .55em to .3em; "Welcome," and "Commander" come into focus from an 8px blur, 120ms apart; the CMDR name and a violet hairline follow. At 2.75s it dissolves (.42s, scale .97 and blur 6px) into the sharpening dashboard; any click or key skips it, and with reduced motion it simply shows for 1.6s and goes. Other transitions are functional (hover grounds .15s, switch .25s, chevron .2s, stale-data fade to .7 opacity). `prefers-reduced-motion: reduce` removes all animation and transition.
+The summary column opens like Weather: the current system at 20px with a violet pin, the 96px thin kill count, a 17px condition line, a `label-2` sub line and a narrow note. When a kill lands, the count replays a 0.55s tick (rises 10px from .25 opacity through imperial violet to `label`) and the range fills grow from their previous value to the new one. The other authored motion is the welcome card, once per launch (a fresh browser tab): the dashboard blurs behind a card (a .45s veil, backdrop blur 16px); a 1.5px imperial reticle ring draws itself around the emblem in 1s with four cardinal ticks; a violet radial glow blooms behind it and a white sheen sweeps across the emblem, masked to its shape; the "Her Imperial Majesty's / Anti-Piracy Network" eyebrow, on two lines like the toolbar lockup, tightens its tracking from .55em to .3em; "Welcome," and "Commander" come into focus from an 8px blur, 120ms apart; the CMDR name and a violet hairline follow. At 2.75s it dissolves (.42s, scale .97 and blur 6px) into the sharpening dashboard; any click or key skips it, and with reduced motion it simply shows for 1.6s and goes. Other transitions are functional (hover grounds .15s, switch .25s, chevron .2s, stale-data fade to .7 opacity). `prefers-reduced-motion: reduce` removes all animation and transition.
 
 ## Do's and Don'ts
 
