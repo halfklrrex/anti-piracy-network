@@ -1,0 +1,14 @@
+# Your own data: personal, and rebuilt as you play
+offsets.json
+config.json
+
+# Python and build output (the .exe is published on the Releases page)
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+
+# Design-tool working files
+.impeccable/review/
+.impeccable/hook.cache.json

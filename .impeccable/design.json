@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-24T19:10:00Z",
+  "title": "Design System: Massacre Stack",
+  "extensions": {
+    "colorMeta": {
+      "ground-top": {
+        "role": "neutral",
+        "displayName": "Violet-Black Ground (top)",
+        "canonical": "#140e1f",
+        "tonalRamp": [
+          "#0b0a0f",
+          "#140e1f",
+          "#16131d",
+          "#1e1a27",
+          "#2a2436",
+          "#4a4358",
+          "#8a8496",
+          "#f4f2f8"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Violet-Black Ground",
+        "canonical": "#0b0a0f",
+        "tonalRamp": [
+          "#0b0a0f",
+          "#140e1f",
+          "#16131d",
+          "#1e1a27",
+          "#2a2436",
+          "#4a4358",
+          "#8a8496",
+          "#f4f2f8"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Plum Surface",
+        "canonical": "#16131d",
+        "tonalRamp": [
+          "#0b0a0f",
+          "#140e1f",
+          "#16131d",
+          "#1e1a27",
+          "#2a2436",
+          "#4a4358",
+          "#8a8496",
+          "#f4f2f8"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Plum Surface 2",
+        "canonical": "#1e1a27",
+        "tonalRamp": [
+          "#0b0a0f",
+          "#140e1f",
+          "#16131d",
+          "#1e1a27",
+          "#2a2436",
+          "#4a4358",
+          "#8a8496",
+          "#f4f2f8"
+        ]
+      },
+      "surface-3": {
+        "role": "neutral",
+        "displayName": "Plum Surface 3",
+        "canonical": "#2a2436",
+        "tonalRamp": [
+          "#0b0a0f",
+          "#140e1f",
+          "#16131d",
+          "#1e1a27",
+          "#2a2436",
+          "#4a4358",
+          "#8a8496",
+          "#f4f2f8"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(255, 255, 255, .07)",
+        "tonalRamp": [
+          "rgba(255,255,255,.045)",
+          "rgba(255,255,255,.07)",
+          "rgba(255,255,255,.08)",
+          "rgba(255,255,255,.12)",
+          "rgba(255,255,255,.13)",
+          "rgba(255,255,255,.14)",
+          "rgba(255,255,255,.16)",
+          "rgba(255,255,255,.18)"
+        ]
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "rgba(255, 255, 255, .12)",
+        "tonalRamp": [
+          "rgba(255,255,255,.045)",
+          "rgba(255,255,255,.07)",
+          "rgba(255,255,255,.08)",
+          "rgba(255,255,255,.12)",
+          "rgba(255,255,255,.13)",
+          "rgba(255,255,255,.14)",
+          "rgba(255,255,255,.16)",
+          "rgba(255,255,255,.18)"
+        ]
+      },
+      "fill": {
+        "role": "neutral",
+        "displayName": "Fill",
+        "canonical": "rgba(255, 255, 255, .08)",
+        "tonalRamp": [
+          "rgba(255,255,255,.045)",
+          "rgba(255,255,255,.07)",
+          "rgba(255,255,255,.08)",
+          "rgba(255,255,255,.12)",
+          "rgba(255,255,255,.13)",
+          "rgba(255,255,255,.14)",
+          "rgba(255,255,255,.16)",
+          "rgba(255,255,255,.18)"
+        ]
+      },
+      "label": {
+        "role": "neutral",
+        "displayName": "Label",
+        "canonical": "#f4f2f8",
+        "tonalRamp": [
+          "rgba(236,232,246,.52)",
+          "rgba(236,232,246,.58)",
+          "rgba(236,232,246,.64)",
+          "rgba(236,232,246,.72)",
+          "rgba(236,232,246,.80)",
+          "rgba(236,232,246,.88)",
+          "rgba(236,232,246,.94)",
+          "#f4f2f8"
+        ]
+      },
+      "label-2": {
+        "role": "neutral",
+        "displayName": "Label 2",
+        "canonical": "rgba(236, 232, 246, .64)",
+        "tonalRamp": [
+          "rgba(236,232,246,.52)",
+          "rgba(236,232,246,.58)",
+          "rgba(236,232,246,.64)",
+          "rgba(236,232,246,.72)",
+          "rgba(236,232,246,.80)",
+          "rgba(236,232,246,.88)",
+          "rgba(236,232,246,.94)",
+          "#f4f2f8"
+        ]
+      },
+      "label-3": {
+        "role": "neutral",
+        "displayName": "Label 3 (text floor)",
+        "canonical": "rgba(236, 232, 246, .52)",
+        "tonalRamp": [
+          "rgba(236,232,246,.52)",
+          "rgba(236,232,246,.58)",
+          "rgba(236,232,246,.64)",
+          "rgba(236,232,246,.72)",
+          "rgba(236,232,246,.80)",
+          "rgba(236,232,246,.88)",
+          "rgba(236,232,246,.94)",
+          "#f4f2f8"
+        ]
+      },
+      "imperial": {
+        "role": "primary",
+        "displayName": "Imperial Violet",
+        "canonical": "#b890ff",
+        "tonalRamp": [
+          "#1c1030",
+          "#2e1a52",
+          "#452878",
+          "#5f39a3",
+          "#7a4ddc",
+          "#9a6ef0",
+          "#b890ff",
+          "#e2d4ff"
+        ]
+      },
+      "imperial-deep": {
+        "role": "primary",
+        "displayName": "Deep Imperial",
+        "canonical": "#7a4ddc",
+        "tonalRamp": [
+          "#1c1030",
+          "#2e1a52",
+          "#452878",
+          "#5f39a3",
+          "#7a4ddc",
+          "#9a6ef0",
+          "#b890ff",
+          "#e2d4ff"
+        ]
+      },
+      "imperial-wash": {
+        "role": "primary",
+        "displayName": "Imperial Wash",
+        "canonical": "rgba(184, 144, 255, .14)",
+        "tonalRamp": [
+          "rgba(184,144,255,.14)",
+          "rgba(184,144,255,.24)",
+          "rgba(184,144,255,.38)",
+          "rgba(184,144,255,.5)",
+          "rgba(184,144,255,.6)",
+          "rgba(184,144,255,.75)",
+          "rgba(184,144,255,.9)",
+          "#b890ff"
+        ]
+      },
+      "green": {
+        "role": "tertiary",
+        "displayName": "System Green (state)",
+        "canonical": "#34d15a",
+        "tonalRamp": [
+          "#0d3318",
+          "#15522a",
+          "#1f7a36",
+          "#27a444",
+          "#34d15a",
+          "#6ee08a",
+          "#a6edb8",
+          "#dcf8e3"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Signal Amber (uncertainty and warning)",
+        "canonical": "#ffb340",
+        "tonalRamp": [
+          "#4a2f05",
+          "#7a4d0a",
+          "#a86b10",
+          "#d68d20",
+          "#ffb340",
+          "#ffc76f",
+          "#ffdca3",
+          "#fff1d9"
+        ]
+      },
+      "red": {
+        "role": "tertiary",
+        "displayName": "Alert Red (state)",
+        "canonical": "#ff6b61",
+        "tonalRamp": [
+          "#4a1410",
+          "#7a221c",
+          "#a8322a",
+          "#d9483e",
+          "#ff6b61",
+          "#ff938b",
+          "#ffbcb7",
+          "#ffe5e3"
+        ]
+      },
+      "switch-track": {
+        "role": "neutral",
+        "displayName": "Switch Track (Apple native off fill)",
+        "canonical": "rgba(120, 120, 128, .38)",
+        "tonalRamp": [
+          "rgba(120,120,128,.16)",
+          "rgba(120,120,128,.24)",
+          "rgba(120,120,128,.32)",
+          "rgba(120,120,128,.38)",
+          "rgba(120,120,128,.48)",
+          "rgba(120,120,128,.6)",
+          "rgba(120,120,128,.8)",
+          "#78787f"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Total kills left in the summary column; one per view."
+      },
+      "display-narrow": {
+        "displayName": "Display (narrow step)",
+        "purpose": "The display numeral at 720px and below (80px)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Kills-to-go count on each stack card. The amber unconfirmed '+' is proportional: .46em beside the display numeral, .52em beside this one."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Stack names and the empty-state heading; the hero system line is its 20px sibling."
+      },
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "Side-column and Journal section heads."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Page default, tabular figures."
+      },
+      "sentence": {
+        "displayName": "Sentence",
+        "purpose": "State sentences under a stack head, max 78ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Key-value grids, meta lines, buttons (500), table cells."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Hand-in lines, footnotes, ticker keys, column heads."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Letterspaced Saira capitals, 'Massacre Stack' in the toolbar only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-lift",
+        "value": "0 1px 0 rgba(255, 255, 255, .035) inset, 0 16px 36px -18px rgba(0, 0, 0, .7)",
+        "purpose": "Stack cards only."
+      },
+      {
+        "name": "popover-float",
+        "value": "0 20px 50px -10px rgba(0, 0, 0, .6)",
+        "purpose": "The view-options popover."
+      },
+      {
+        "name": "knob",
+        "value": "0 2px 5px rgba(0, 0, 0, .35)",
+        "purpose": "Switch knob."
+      },
+      {
+        "name": "segment-selected",
+        "value": "0 1px 2px rgba(0, 0, 0, .35)",
+        "purpose": "Selected segment in the segmented control."
+      },
+      {
+        "name": "vibrancy-toolbar",
+        "value": "background: rgba(15, 11, 21, .74); backdrop-filter: saturate(180%) blur(20px)",
+        "purpose": "Sticky toolbar over scrolling content."
+      },
+      {
+        "name": "vibrancy-popover",
+        "value": "background: color-mix(in srgb, var(--surface-3) 94%, transparent); backdrop-filter: blur(24px) saturate(180%)",
+        "purpose": "Popover over content; material derived from the surface-3 token."
+      },
+      {
+        "name": "prime-hover",
+        "value": "filter: brightness(1.14)",
+        "purpose": "Primary button hover: lifts imperial-deep in place; no separate hover colour."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "The site's one easing: tick, fills, switch, chevron."
+      },
+      {
+        "name": "kill-tick",
+        "value": "tick .55s ease-out: translateY(10px) opacity .25 in imperial violet -> rest",
+        "purpose": "The authored motion: replays on the hero count when kills-needed changes."
+      },
+      {
+        "name": "range-fill",
+        "value": "clip-path .7s ease-out, driven by --p",
+        "purpose": "Mission fills grow from their previous value to the new one."
+      },
+      {
+        "name": "hover",
+        "value": "background-color .15s",
+        "purpose": "Button hover grounds."
+      },
+      {
+        "name": "switch",
+        "value": "background-color .2s; knob transform .25s ease-out",
+        "purpose": "Switch toggling."
+      },
+      {
+        "name": "stale-fade",
+        "value": "opacity .7 over .3s",
+        "purpose": "Content dims when contact with stacker.py is lost."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce -> all animation and transition off",
+        "purpose": "Always respected."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "720px"
+      },
+      {
+        "name": "single-column",
+        "value": "960px"
+      },
+      {
+        "name": "journal-compact",
+        "value": "1100px"
+      },
+      {
+        "name": "max-width",
+        "value": "1440px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Tinted Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default toolbar button: fill ground, violet label, optional line icon.",
+      "html": "<button class=\"ds-btn\" type=\"button\"><svg class=\"ds-i\" viewBox=\"0 0 24 24\"><path d=\"M19.5 12a7.5 7.5 0 1 1-2.2-5.3\"/><path d=\"M19.5 4.5v4.2h-4.2\"/></svg>Refresh</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: rgba(255,255,255,.08); color: var(--imperial, #b890ff); font: 500 13px/1 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; transition: background-color .15s; } .ds-btn:hover { background: rgba(255,255,255,.13); } .ds-btn:active { background: rgba(255,255,255,.18); } .ds-btn:focus-visible { outline: 2px solid #b890ff; outline-offset: 2px; } .ds-i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-prime",
+      "description": "The one committing action in a form (Set).",
+      "html": "<button class=\"ds-btn-prime\" type=\"button\">Set</button>",
+      "css": ".ds-btn-prime { height: 28px; padding: 0 12px; border: 0; border-radius: 8px; background: #7a4ddc; color: #fff; font: 500 13px/1 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; transition: background-color .15s; } .ds-btn-prime:hover { background: #7a4ddc; filter: brightness(1.14); } .ds-btn-prime:focus-visible { outline: 2px solid #b890ff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "link",
+      "description": "Text action (Sync, Clear correction); quiet variant for Cancel.",
+      "html": "<button class=\"ds-link\" type=\"button\">Sync</button> <button class=\"ds-link ds-link-quiet\" type=\"button\">Cancel</button>",
+      "css": ".ds-link { background: none; border: 0; padding: 4px 7px; border-radius: 6px; color: #b890ff; font: 500 13px/1.2 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-link:hover { background: rgba(184,144,255,.14); } .ds-link:focus-visible { outline: 2px solid #b890ff; outline-offset: 2px; } .ds-link-quiet { color: rgba(236,232,246,.64); } .ds-link-quiet:hover { background: rgba(255,255,255,.07); color: #f4f2f8; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "Stacks | Journal view switch in the toolbar.",
+      "html": "<div class=\"ds-seg\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">Stacks</button><button role=\"tab\" aria-selected=\"false\">Journal</button></div>",
+      "css": ".ds-seg { display: inline-flex; padding: 2px; border-radius: 8px; background: rgba(255,255,255,.08); } .ds-seg button { height: 26px; padding: 0 14px; border: 0; border-radius: 6px; background: none; color: rgba(236,232,246,.64); font: 500 13px/1 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-seg button:hover { color: #f4f2f8; } .ds-seg button[aria-selected='true'] { background: rgba(255,255,255,.16); color: #f4f2f8; box-shadow: 0 1px 2px rgba(0,0,0,.35); } .ds-seg button:focus-visible { outline: 2px solid #b890ff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Switch",
+      "kind": "input",
+      "refersTo": "switch",
+      "description": "iOS switch in the view-options rows; deep imperial when on. Off track is switch-track, Apple's native fill.",
+      "html": "<input type=\"checkbox\" class=\"ds-switch\" role=\"switch\" checked>",
+      "css": ".ds-switch { appearance: none; -webkit-appearance: none; margin: 0; width: 40px; height: 24px; border-radius: 99px; position: relative; cursor: pointer; background: rgba(120,120,128,.38); transition: background-color .2s; } .ds-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.35); transition: transform .25s cubic-bezier(.16,1,.3,1); } .ds-switch:checked { background: #7a4ddc; } .ds-switch:checked::after { transform: translateX(16px); } .ds-switch:focus-visible { outline: 2px solid #b890ff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Numeric Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Manual kill sync inside a surface-2 inset panel.",
+      "html": "<div class=\"ds-inset\"><label>The transactions panel shows</label><input class=\"ds-input\" type=\"number\" value=\"14\"><span>of 24 kills</span></div>",
+      "css": ".ds-inset { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #1e1a27; font: 13px Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: rgba(236,232,246,.64); } .ds-input { width: 76px; height: 28px; padding: 0 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: #0b0a0f; color: #f4f2f8; font: 600 14px Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; caret-color: #b890ff; } .ds-input:focus { outline: 2px solid #b890ff; outline-offset: 0; }"
+    },
+    {
+      "name": "Stack Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "One card per stack: title, meta, pay lines, thin headline count.",
+      "html": "<article class=\"ds-card\"><header class=\"ds-card-head\"><div><h2>Brotherhood of LTT 7548</h2><p>1,240,000 Cr in missions · 51,666 Cr a kill · 6 missions</p><p>18 kills an hour of hunting</p></div><div class=\"ds-card-num\"><b>24</b><span>kills to go</span></div></header></article>",
+      "css": ".ds-card { background: #16131d; border: 1px solid rgba(255,255,255,.07); border-radius: 18px; box-shadow: 0 1px 0 rgba(255,255,255,.035) inset, 0 16px 36px -18px rgba(0,0,0,.7); overflow: clip; color: #f4f2f8; font-family: Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-card-head { display: flex; gap: 24px; align-items: flex-start; padding: 20px 22px 14px; } .ds-card-head > div:first-child { flex: 1; } .ds-card h2 { margin: 0; font: 600 22px/1.2 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif; letter-spacing: -.01em; } .ds-card p { margin: 5px 0 0; font-size: 13px; color: rgba(236,232,246,.64); } .ds-card-num { text-align: right; } .ds-card-num b { display: block; font: 300 50px/1 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif; letter-spacing: -.035em; } .ds-card-num span { font-size: 12px; color: rgba(236,232,246,.64); }"
+    },
+    {
+      "name": "Range Row",
+      "kind": "custom",
+      "refersTo": "track",
+      "description": "Signature: each mission is a segment on its stack's shared kill axis; queued segments dashed; fill revealed by clip-path.",
+      "html": "<div class=\"ds-range\"><span class=\"lo\">9</span><div class=\"ds-track\"><span class=\"seg\" style=\"left:0;width:50%\"></span><i class=\"fill\" style=\"left:0;width:50%;--p:.45\"></i></div><span class=\"hi\">20</span></div><div class=\"ds-range ds-queued\"><span class=\"lo\">20</span><div class=\"ds-track\"><span class=\"seg\" style=\"left:50%;width:50%\"></span></div><span class=\"hi\">40</span></div>",
+      "css": ".ds-range { display: flex; align-items: center; gap: 10px; padding: 10px 0; font: 13px Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #f4f2f8; } .ds-range .lo, .ds-range .hi { width: 30px; flex: none; } .ds-range .lo { text-align: right; font-weight: 600; } .ds-range .hi { color: rgba(236,232,246,.64); } .ds-track { position: relative; flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.045); } .ds-track .seg, .ds-track .fill { position: absolute; top: 0; bottom: 0; border-radius: 99px; min-width: 12px; } .ds-track .seg { background: rgba(255,255,255,.14); } .ds-track .fill { background: linear-gradient(90deg, #7a4ddc, #b890ff); clip-path: inset(0 calc((1 - var(--p, 0)) * 100%) 0 0 round 99px); transition: clip-path .7s cubic-bezier(.16,1,.3,1); } .ds-queued .ds-track .seg { background: repeating-linear-gradient(90deg, rgba(184,144,255,.38) 0 4px, transparent 4px 8px); } .ds-queued .lo { color: rgba(236,232,246,.52); font-weight: 400; } @media (prefers-reduced-motion: reduce) { .ds-track .fill { transition: none; } }"
+    },
+    {
+      "name": "Key-Value Grid",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Stocks statistics grid: hairline rows, key in label-2, value at 600.",
+      "html": "<dl class=\"ds-facts\"><div><dt>Pay</dt><dd>1.24M Cr</dd></div><div><dt>A kill</dt><dd>51,666 Cr</dd></div><div><dt>Bounties</dt><dd>318,400 Cr</dd></div><div><dt>Missions</dt><dd>6</dd></div></dl>",
+      "css": ".ds-facts { display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; margin: 0; font-family: Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-facts div { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,.07); } .ds-facts dt { font-size: 13px; color: rgba(236,232,246,.64); } .ds-facts dd { margin: 0; font-size: 13px; font-weight: 600; color: #f4f2f8; text-align: right; white-space: nowrap; }"
+    },
+    {
+      "name": "State Sentence",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "States print as sentences with a line icon, never badges; warnings turn wholly amber.",
+      "html": "<p class=\"ds-say\"><svg class=\"ds-i\" viewBox=\"0 0 24 24\"><path d=\"M5 12h13M13 6.5l5.5 5.5-5.5 5.5\"/></svg><span>Next payout in <b>3 kills</b> — 820,000 Cr</span></p><p class=\"ds-say ds-warn\"><svg class=\"ds-i\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M12 7.8V12l2.8 1.8\"/></svg><span>At 18 kills an hour of hunting, <b>one queued mission</b> expires before its turn.</span></p>",
+      "css": ".ds-say { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 7px; max-width: 78ch; font: 13.5px/1.45 Saira, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: rgba(236,232,246,.64); } .ds-say b { color: #f4f2f8; font-weight: 600; } .ds-say .ds-i { margin-top: 2px; width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-warn, .ds-warn b { color: #ffb340; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Imperial Stocks App",
+    "overview": "Apple's Stocks and Weather, dark, issued to Arissa Lavigny-Duval's pilots. The page reads like a first-party utility: a violet-black ground, plum-neutral cards lifted a step above it, thin numerals at weather-app scale, hairline key-value grids, and one imperial violet that carries progress, the emblem and every control. Empire enters through the purple, the commander's own eagle emblem (user raster at `/emblem`; an original inline-SVG eagle only if that file is missing) and one typeface, Saira, whose squared letters echo the lettering on Elite's own cockpit panels. The type is in-universe; the chrome stays Apple's, and there is no sci-fi HUD chrome.\n\nIt is built for a few seconds of attention between fights. One huge kill count answers the first question; every mission is drawn as a segment on its stack's shared kill axis, so the queue that sets the pace can be seen rather than worked out; state is written as a plain sentence with a small line icon, never as a badge. Density is Stocks-like: many rows, 13px labels, hairlines instead of boxes, and tabular figures everywhere so columns never shimmer as the page polls every second.\n\nRejected by the direction and absent from the build: the gaming-HUD dashboard of orange stat tiles, and badge clutter.",
+    "keyCharacteristics": [
+      "Violet-black ground gradient under plum-neutral surfaces; depth by tone, with one soft card shadow.",
+      "One accent (imperial violet); green, amber and red appear only as state.",
+      "Saira throughout, one family at every size; thin 300-weight numerals for the two headline counts; letterspaced capitals for the wordmark alone.",
+      "Range rows on a shared axis; dashed segments mean queued or pending.",
+      "States as sentences; amber reserved for real uncertainty and warnings.",
+      "Authored 1.75-stroke line icons at 14 to 17px.",
+      "One authored motion: a landed kill ticks the hero number and grows the bars."
+    ],
+    "rules": [
+      {
+        "name": "The One Violet Rule",
+        "body": "Imperial violet is the only hue that is not state. It marks progress, identity and what can be pressed; it is never a section color, a card tint or a heading color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Colour Is State Rule",
+        "body": "Green, amber and red appear only when they mean something about the data. Amber is reserved for real uncertainty and warnings; if nothing is uncertain or at risk, no amber is on screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The Thin Numeral Rule",
+        "body": "Only the two kill counts are set at 300 weight and large; no other number competes with them. Every other figure is 13 to 15px at 600.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "Saira is the only typeface, at every size and role. It ships as the variable file `fonts/saira.woff2` (weights 100 to 900) and is loaded only from there: a `local()` source would let an installed static Saira stand in for every weight. Letterspaced capitals belong to the wordmark; headings, labels and figures are sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "`font-variant-numeric: tabular-nums` is set on body and on inputs; figures in a column must not shift width as they update.",
+        "section": "typography"
+      },
+      {
+        "name": "The Glance Column Rule",
+        "body": "On desktop the answer (kills left, pay, standing, where to hand in) never scrolls away; it lives in the sticky left column.",
+        "section": "layout"
+      },
+      {
+        "name": "The Vibrancy Earns Its Keep Rule",
+        "body": "Blur only surfaces that float over scrolling content (toolbar `rgba(15, 11, 21, .74)`, popover `color-mix(in srgb, var(--surface-3) 94%, transparent)`, a material derived from the surface-3 token). Cards are opaque.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep imperial violet the only non-state hue: progress, emblem, controls, focus.",
+      "**Do** write state as a sentence with a 1.75-stroke line icon, and color the sentence only when it is a warning or a danger.",
+      "**Do** mark anything the game has not confirmed with an amber \"+\" or amber text, and use amber for nothing else.",
+      "**Do** put every mission on its stack's shared kill axis; dash what is queued or pending.",
+      "**Do** set the headline counts at 300 weight and everything else at 13 to 15px, with tabular figures.",
+      "**Do** separate rows with 1px hairlines rather than boxes, in the Stocks key-value manner.",
+      "**Do** keep the summary column sticky on desktop and collapse to the two-row toolbar and label-above-value cells below 720px.",
+      "**Do** use the commander's emblem raster as the mark and tab icon, with the original inline eagle only as a fallback."
+    ],
+    "donts": [
+      "**Don't** render state as badge chips or colored pills, and don't build orange stat tiles or other gaming-HUD chrome.",
+      "**Don't** add a second accent hue, or tint cards, headings or sections violet.",
+      "**Don't** add a second typeface, or use letterspaced capitals anywhere but the wordmark.",
+      "**Don't** give a mission bar its own 0-to-N scale; that hides which queue sets the pace.",
+      "**Don't** blur or frost surfaces that do not float over scrolling content.",
+      "**Don't** add motion beyond the kill tick and bar growth, and never ignore reduced motion.",
+      "**Don't** set text dimmer than `label-3`.",
+      "**Don't** bundle Frontier artwork or icon fonts; icons are authored inline SVG."
+    ]
+  }
+}
