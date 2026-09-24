@@ -86,6 +86,11 @@ all four added together.
 - **Bounties** earned in the stack's system since it began, beside the mission
   rewards, because you often take materials or reputation instead of credits.
   Combat bonds are kept separate.
+  Bounties show in **gold** when the system they were earned in pays a Powerplay
+  bonus on cashing them in: +40% in A. Lavigny-Duval and Yuri Grom strongholds,
+  +20% where they exploit (read off real cash-ins; it doesn't depend on your
+  pledge). The gold figure is what they're worth cashed in there; hover it for
+  the logged amount.
 - **Expiry warnings**: a queued mission earns nothing until its turn. If it won't
   get its kills before its deadline at your pace, its deadline turns amber.
 - **Target check**: lock a ship and the stack says whether killing it counts,
