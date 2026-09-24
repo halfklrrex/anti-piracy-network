@@ -79,6 +79,11 @@ all four added together.
 - **Each giver's queue on one kill scale**, so you can see which queue is
   longest (*sets the pace*) and where each
   queued mission starts ("Starts in 54 kills").
+- **Free kills**: every giver behind the pace-setting queue shows how much room
+  it has ("33 free"). Another mission from that giver of up to that many kills
+  adds nothing to the stack's cost. Hover *sets the pace* for how big a mission
+  from a faction not yet in the stack can be. Hidden while your mission slots
+  are full.
 - **A row of figures per stack**: next payout, time to finish, rewards, per kill
   and bounties. Hover any of them for the full amount and where it comes from.
   Time to finish uses this session's pace once you've made 10 kills against the
@@ -96,6 +101,10 @@ all four added together.
 - **Target check**: lock a ship and the stack says whether killing it counts,
   whether it's the right faction in the wrong system, or whether it's clean and
   attacking it would be a crime.
+- **Wanted alert**: if the game says you're wanted in the system you're in, a
+  red line says so, with the bounty logged for your crimes there and who issued
+  it. An unpaid fine gets an amber line. The game's own flag on your last jump
+  in is the authority; paying off, or jumping back in clean, clears it.
 - **Standing** with every mission provider (Neutral, Cordial, Friendly,
   Allied…), as of your last jump into its space.
 - **This session**: time, kills, bounties, mission pay, merits and credits an

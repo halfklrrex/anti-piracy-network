@@ -241,6 +241,8 @@ class Tracker:
         self.empire = {}          # Imperial Navy: {"rank", "progress"}
         self.combat = {}          # Pilots' Federation combat: {"rank", "progress", "kills" since then}
         self.target = None        # the ship currently locked, as far as it has been scanned
+        self.legal = {}           # star system -> {"wanted", "fine"}: the game's word on the latest jump in
+        self.crimes = []          # (timestamp, star_system, faction, "bounty" | "fine", credits) still owed
         self.history = {}         # summary from the full-history scan (usual pace, rank rates)
         self._history_full, self._history_at = None, 0.0
 
@@ -415,6 +417,9 @@ class Tracker:
             if self.current_system and "PowerplayState" in ev:
                 self.system_power[self.current_system] = (ev.get("ControllingPower"),
                                                           ev.get("PowerplayState"))
+            if self.current_system:
+                self._legal_status(self.current_system, bool(ev.get("Wanted")),
+                                   bool(ev.get("ActiveFine")))
             pos = ev.get("StarPos")
             if self.current_system and isinstance(pos, list) and len(pos) == 3:
                 self.system_pos[self.current_system] = tuple(pos)
@@ -454,6 +459,18 @@ class Tracker:
 
         elif name == "ShipTargeted":
             self._target(ev, ts)
+
+        elif name == "CommitCrime":
+            kind = "bounty" if ev.get("Bounty") else "fine" if ev.get("Fine") else None
+            if kind and self.current_system:
+                self.crimes.append((ts, self.current_system, ev.get("Faction"), kind,
+                                    ev.get("Bounty") or ev.get("Fine") or 0))
+                self.legal.setdefault(self.current_system, {"wanted": False, "fine": False})
+                self.legal[self.current_system]["wanted" if kind == "bounty" else "fine"] = True
+
+        elif name in ("PayBounties", "PayFines"):
+            self._paid_off("bounty" if name == "PayBounties" else "fine",
+                           ev.get("Faction"), bool(ev.get("AllFines")))
 
         elif name == "Docked":
             # Missions are taken at a station, so this is where a mission
@@ -658,6 +675,52 @@ class Tracker:
             "faction": ev.get("Faction") or same.get("faction"),
             "legal": ev.get("LegalStatus") or same.get("legal"),
             "bounty": ev.get("Bounty") or same.get("bounty"),
+        }
+
+    def _legal_status(self, system, wanted, fine):
+        """Location and FSDJump say whether you're wanted, or owe a fine, in
+        the system you're in. Once the game says you aren't, the crimes logged
+        there are settled, however that happened."""
+        self.legal[system] = {"wanted": wanted, "fine": fine}
+        cleared = {k for k, owed in (("bounty", wanted), ("fine", fine)) if not owed}
+        self.crimes = [c for c in self.crimes if not (c[1] == system and c[3] in cleared)]
+
+    def _paid_off(self, kind, faction, everything):
+        """Bounties or fines paid at a station or Interstellar Factors: to one
+        faction, or all of them at once."""
+        flag = "wanted" if kind == "bounty" else "fine"
+        paid = [c for c in self.crimes if c[3] == kind and (everything or c[2] == faction)]
+        self.crimes = [c for c in self.crimes if c not in paid]
+        still = {c[1] for c in self.crimes if c[3] == kind}
+        # A flag set by the game on a jump, with no crime logged behind it, is
+        # left alone unless everything was paid; the next jump says for sure.
+        for system in ({c[1] for c in paid} - still) | (set(self.legal) if everything else set()):
+            if system in self.legal:
+                self.legal[system][flag] = False
+
+    def legal_summary(self):
+        """Whether you're wanted, or owe a fine, where you are right now."""
+        system = self.current_system
+        status = self.legal.get(system) or {}
+        if not (status.get("wanted") or status.get("fine")):
+            return None
+        owed = {}
+        for ts, where, faction, kind, credits in self.crimes:
+            if where == system and status.get("wanted" if kind == "bounty" else "fine"):
+                entry = owed.setdefault(kind, {"credits": 0, "factions": []})
+                entry["credits"] += credits
+                if faction and faction not in entry["factions"]:
+                    entry["factions"].append(faction)
+        return {
+            "system": system,
+            "wanted": bool(status.get("wanted")),
+            "fine": bool(status.get("fine")),
+            # Amounts only for crimes logged in the scanned window; an older
+            # one still flags you, with no figure to show.
+            "bounty": owed.get("bounty", {}).get("credits", 0),
+            "bounty_factions": owed.get("bounty", {}).get("factions", []),
+            "fines": owed.get("fine", {}).get("credits", 0),
+            "fine_factions": owed.get("fine", {}).get("factions", []),
         }
 
     def target_summary(self, groups):
@@ -980,6 +1043,10 @@ class Tracker:
                 live = [e for e in entries if not e["expired"]]
                 heads = [e for e in live if not e["queued"]]
                 needed = max((c["kills"] for c in chain_info), default=0)
+                # Every queue shorter than the pace has room: a mission of up
+                # to that many kills from this giver adds nothing to the cost.
+                for c in chain_info:
+                    c["free"] = needed - c["kills"]
                 naive = sum(e["remaining"] for e in live)
                 reward = sum(e["reward"] for e in live)
                 entries.sort(key=lambda e: (e["queued"], e["remaining"], -e["reward"]))
@@ -1079,6 +1146,7 @@ class Tracker:
                 "powerplay": self.powerplay(),
                 "combat": self.combat_rank(),
                 "target": self.target_summary(groups),
+                "legal": self.legal_summary(),
                 "route": self.hand_in_route(ready),
                 "totals": {
                     "missions": sum(g["mission_count"] for g in groups),
@@ -1398,6 +1466,13 @@ def print_report(state):
     print(f" {APP_NAME.upper()}")
     print("=" * 68)
     print(f" CMDR {state['commander'] or '?'}   |   in system: {state['current_system'] or '?'}")
+    legal = state.get("legal")
+    if legal and legal["wanted"]:
+        owed = f": {fmt_cr(legal['bounty'])} Cr bounty" if legal["bounty"] else ""
+        print(f" !! WANTED in {legal['system']}{owed}")
+    if legal and legal["fine"]:
+        owed = f": {fmt_cr(legal['fines'])} Cr" if legal["fines"] else ""
+        print(f" !  Unpaid fine in {legal['system']}{owed}")
     print()
     if not state["groups"] and not state["ready"]:
         print(" No active massacre missions found.")
@@ -1413,7 +1488,8 @@ def print_report(state):
               f"| {fmt_cr(g['reward'])} Cr | {fmt_cr(g['cr_per_kill'])} Cr/kill")
         for c in g["chains"]:
             queue = f" ({c['missions']} queued one after another)" if c["missions"] > 1 else ""
-            print(f"   {c['kills']:>3} kills from {c['giver']}{queue}")
+            free = f"  ({c['free']} free)" if c["free"] and state["slots"]["used"] < state["slots"]["cap"] else ""
+            print(f"   {c['kills']:>3} kills from {c['giver']}{queue}{free}")
         print("-" * 68)
         for m in g["missions"]:
             width = 22

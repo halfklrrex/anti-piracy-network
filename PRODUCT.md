@@ -56,8 +56,15 @@ screen is traceable to a journal event.
 - Bounties per stack (bounties only; combat bonds are kept separate), time to
   finish at this session's or the usual pace, and amber warnings for queued
   missions that will expire before their turn.
+- Free kills: for every giver behind the pace-setting queue, how many kills a
+  further mission from them could need and still add nothing to the stack's
+  cost (shown only while a mission slot is free).
 - Target check: whether the locked ship counts toward a stack, is the right
   faction in the wrong system, or is clean (attacking it is a crime).
+- Wanted alert: whether the game flags the commander as wanted, or owing a
+  fine, in the current system (the `Wanted` / `ActiveFine` flags on the last
+  jump in), with the amounts from `CommitCrime` events logged there. Cleared by
+  `PayBounties` / `PayFines` or a clean jump back in.
 - Standing with each mission provider (as of the last jump into its space),
   mission slots against the cap of 20, and a "this session" strip.
 - Ranks: combat rank with this session's estimated gain and kills to the next

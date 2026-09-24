@@ -864,7 +864,7 @@ function missionRow(m, prev, seg, axis, headDone, risk) {
     </li>`;
 }
 
-function stackCard(g, prev, solo, explained, target) {
+function stackCard(g, prev, solo, explained, target, slotsFree) {
   const givers = new Map();
   const chainInfo = new Map(g.chains.map((c) => [c.giver, c]));
   for (const m of g.missions) {
@@ -965,6 +965,8 @@ function stackCard(g, prev, solo, explained, target) {
   const paceWhy = paceChain && paceChain.missions > 1 && g.kills_needed > biggest
     ? `${paceChain.giver}’s ${paceChain.missions} missions run one after another, so this stack takes ${g.kills_needed} kills instead of ${biggest}.`
     : "The longest queue here: it decides how many kills the stack takes.";
+  const newGiver = slotsFree && g.kills_needed
+    ? ` A mission from a faction not yet in this stack adds nothing up to ${plural(g.kills_needed, "kill")}.` : "";
 
   // The meaning of "+" is explained once, under the hero; the mission holding
   // a stack back is the amber row.
@@ -988,10 +990,14 @@ function stackCard(g, prev, solo, explained, target) {
       ${order.map((giver) => {
         const kills = chainKills.get(giver) || 0;
         const isPace = giver === pace && g.chains.length > 1;
+        // Room behind a shorter queue: more from this giver costs no extra kills.
+        const free = slotsFree && !isPace ? (chainInfo.get(giver) || {}).free || 0 : 0;
+        const freeWhy = `${giver}’s queue is ${plural(free, "kill")} shorter than the one that sets the pace, so another of their missions of up to ${plural(free, "kill")} adds nothing to this stack.`;
         return `
           <section class="giver">
             <div class="giver-head"><h3>${esc(giver)}${standingWord(chainInfo.get(giver))}</h3>
-              <span class="giver-kills">${plural(kills, "kill")}${isPace ? `<em title="${esc(paceWhy)}">sets the pace</em>` : ""}</span></div>
+              <span class="giver-kills">${plural(kills, "kill")}${isPace ? `<em title="${esc(paceWhy + newGiver)}">sets the pace</em>` : ""}${
+                free ? `<em title="${esc(freeWhy)}">${free} free</em>` : ""}</span></div>
             <ol class="missions">${givers.get(giver).map((m) =>
               missionRow(m, prev, segs.get(m.id), axis, headDone.get(giver) || 0,
                          risky.has(m.id) ? paceText : "")).join("")}</ol>
@@ -1015,7 +1021,9 @@ function renderStacks(s, prev) {
   const explained = new Set();
   const solo = s.groups.length === 1;   // the hero already shows a lone stack's count
   const target = freshTarget(s);
-  $("stacks").innerHTML = s.groups.map((g) => stackCard(g, prev, solo, explained, target)).join("");
+  // Free kills only matter while there's a slot to take another mission in.
+  const slotsFree = !s.slots || s.slots.used < s.slots.cap;
+  $("stacks").innerHTML = s.groups.map((g) => stackCard(g, prev, solo, explained, target, slotsFree)).join("");
 }
 
 // A lock older than a quarter of an hour is history, not a target.
@@ -1038,6 +1046,18 @@ function renderNow(s) {
       ["Per hour", se.kills || se.mission_credits ? `${cr(se.credits_per_hour)} Cr` : "—"],
     ];
     html += `<div class="ticker">${items.map(([k, v, tip]) => `<div><span>${k}</span><b${tip || ""}>${v}</b></div>`).join("")}</div>`;
+  }
+  // The game's own word, on the last jump in, that you're wanted or owe a fine here.
+  const lg = s.legal;
+  if (lg && lg.wanted) {
+    const from = lg.bounty_factions.length ? ` from ${lg.bounty_factions.map(esc).join(" and ")}` : "";
+    html += `<p class="say bad" title="The game says you’re wanted in this system; the amount is what the journal logged for crimes here.">${icon("alert")}<span>You’re wanted in <b>${esc(lg.system)}</b>${
+      lg.bounty ? ` — <b>${cr(lg.bounty)} Cr</b> bounty${from}` : ""}.</span></p>`;
+  }
+  if (lg && lg.fine) {
+    const to = lg.fine_factions.length ? ` to ${lg.fine_factions.map(esc).join(" and ")}` : "";
+    html += `<p class="say warn" title="The game says you have an unpaid fine in this system; the amount is what the journal logged for crimes here.">${icon("alert")}<span>Unpaid fine in <b>${esc(lg.system)}</b>${
+      lg.fines ? ` — <b>${cr(lg.fines)} Cr</b>${to}` : ""}.</span></p>`;
   }
   const t = freshTarget(s);
   if (t && t.verdict !== "counts" && t.verdict !== "wrong_system") {
