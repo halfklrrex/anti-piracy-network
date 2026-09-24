@@ -78,6 +78,14 @@ MISSION_CAP = 20
 IMPERIAL_RANKS = ["None", "Outsider", "Serf", "Master", "Squire", "Knight", "Lord",
                   "Baron", "Viscount", "Count", "Earl", "Marquis", "Duke", "Prince", "King"]
 
+# Bounty vouchers pay more when cashed in a system held by these powers,
+# whoever you're pledged to. Read off this journal's cash-ins: paid / logged was
+# 1.4 in A. Lavigny-Duval and Yuri Grom strongholds, 1.2 where they exploit,
+# and 1.0 everywhere else (Aisling Duval, Archer, Mahon, Torval, Patreus, none).
+# Fortified sits between the two measured states.
+BOUNTY_BONUS_POWERS = {"A. Lavigny-Duval", "Yuri Grom"}
+BOUNTY_BONUS_BY_STATE = {"Exploited": 0.2, "Fortified": 0.3, "Stronghold": 0.4}
+
 COMBAT_RANKS = ["Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master",
                 "Dangerous", "Deadly", "Elite", "Elite I", "Elite II", "Elite III",
                 "Elite IV", "Elite V"]
@@ -225,6 +233,7 @@ class Tracker:
         self.merits = []          # (timestamp, merits gained)
         self.accepts = {}         # every MissionID accepted, any type -> timestamp (mission slots)
         self.system_pos = {}      # star system -> (x, y, z) in light years (hand-in route)
+        self.system_power = {}    # star system -> (controlling power, powerplay state)
         self.factions = {}        # faction -> {"allegiance", "rep"} from the latest jump into its space
         self.session_start = None # the latest LoadGame
         self.session_active = 0.0 # seconds actually playing since then
@@ -403,6 +412,9 @@ class Tracker:
             if name == "Location" and ev.get("Docked") and ev.get("StationName"):
                 self.last_dock = {"system": ev.get("StarSystem"),
                                   "station": ev.get("StationName")}
+            if self.current_system and "PowerplayState" in ev:
+                self.system_power[self.current_system] = (ev.get("ControllingPower"),
+                                                          ev.get("PowerplayState"))
             pos = ev.get("StarPos")
             if self.current_system and isinstance(pos, list) and len(pos) == 3:
                 self.system_pos[self.current_system] = tuple(pos)
@@ -687,10 +699,22 @@ class Tracker:
         rep = info.get("rep")
         return {"standing": standing(rep), "rep": rep, "allegiance": info.get("allegiance")}
 
+    def bounty_bonus(self, system):
+        """What cashing bounties in this system adds: (rate, power, state)."""
+        power, state = self.system_power.get(system, (None, None))
+        rate = BOUNTY_BONUS_BY_STATE.get(state, 0) if power in BOUNTY_BONUS_POWERS else 0
+        return rate, power, state
+
     def bounties_since(self, system, start):
         hits = [(c, kind) for ts, where, c, kind in self.bounties
                 if where == system and ts and start and ts >= start]
-        return {"bounties": sum(c for c, kind in hits if kind == "bounty"),
+        logged = sum(c for c, kind in hits if kind == "bounty")
+        rate, power, state = self.bounty_bonus(system)
+        return {"bounties": logged,
+                # Worth this much cashed in the system they were earned in.
+                "bounties_paid": round(logged * (1 + rate)),
+                "bonus_rate": rate, "bonus_power": power if rate else None,
+                "bonus_state": state if rate else None,
                 "bonds": sum(c for c, kind in hits if kind == "bond"),
                 "kills": len(hits)}
 
@@ -713,9 +737,11 @@ class Tracker:
         if not start:
             return None
         hours = max(self.session_active / 3600, 1 / 60)
-        hunt = [(c, kind) for ts, _, c, kind in self.bounties if ts and ts >= start]
-        bounty = sum(c for c, kind in hunt if kind == "bounty")
-        bonds = sum(c for c, kind in hunt if kind == "bond")
+        hunt = [(c, kind, where) for ts, where, c, kind in self.bounties if ts and ts >= start]
+        bounty = sum(c for c, kind, _ in hunt if kind == "bounty")
+        bounty_paid = round(sum(c * (1 + self.bounty_bonus(where)[0])
+                                for c, kind, where in hunt if kind == "bounty"))
+        bonds = sum(c for c, kind, _ in hunt if kind == "bond")
         paid = sum(c for ts, c in self.paid if ts and ts >= start)
         return {
             "started": iso(start),
@@ -723,9 +749,10 @@ class Tracker:
             "kills": len(hunt),
             "kills_per_hour": round(len(hunt) / hours, 1),
             "bounties": bounty,
+            "bounties_paid": bounty_paid,
             "bonds": bonds,
             "mission_credits": paid,
-            "credits_per_hour": int((bounty + bonds + paid) / hours),
+            "credits_per_hour": int((bounty_paid + bonds + paid) / hours),
             "merits": sum(m for ts, m in self.merits if ts and ts >= start),
         }
 
@@ -993,6 +1020,10 @@ class Tracker:
                     "next_payout": self._next_payout(heads),
                     "began": iso(began),
                     "bounties": earned["bounties"],
+                    "bounties_paid": earned["bounties_paid"],
+                    "bonus_rate": earned["bonus_rate"],
+                    "bonus_power": earned["bonus_power"],
+                    "bonus_state": earned["bonus_state"],
                     "bonds": earned["bonds"],
                     "bounty_kills": earned["kills"],
                     "pace": pace,
@@ -1058,6 +1089,7 @@ class Tracker:
                     "cr_per_kill": int(reward / kills_needed) if kills_needed else 0,
                     "ready_reward": sum(r["reward"] for r in ready),
                     "bounties": sum(x["bounties"] for x in shared),
+                    "bounties_paid": sum(x["bounties_paid"] for x in shared),
                     "bonds": sum(x["bonds"] for x in shared),
                 },
                 "groups": groups,

@@ -32,6 +32,7 @@
     --green-deep: #1f7a36;
     --green-wash: rgba(52, 209, 90, .14);
     --amber: #ffb340;
+    --gold: #f0cc70;
     --red: #ff6b61;
     --radius: 18px;
     --sans: "Saira", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
@@ -216,6 +217,8 @@
   .stats div { display: flex; flex-direction: column; gap: 3px; }
   .stats dt { font-size: 12px; color: var(--label-2); }
   .stats dd { margin: 0; font-size: 15px; font-weight: 600; white-space: nowrap; }
+  /* Bounties worth more for where they'll be cashed in (a Powerplay bonus). */
+  .gold, .facts dd.gold { color: var(--gold); }
   .stack-num { text-align: right; flex: none; }
   .stack-num b { display: block; font: 300 50px/1 var(--display); letter-spacing: -.035em; }
   .stack-num b .plus { font-size: .52em; color: var(--amber); vertical-align: 18px; margin-left: 2px; }
@@ -631,6 +634,9 @@ const crM = (n) => ((n || 0) >= 1e6 ? `${((n || 0) / 1e6).toFixed(1)}M` : cr(n))
 // One scale per column: millions to one decimal, and "<0.1M" rather than a
 // full figure that would sit unreadably beside "35.1M".
 const colM = (n) => ((n || 0) < 50000 ? "<0.1M" : `${((n || 0) / 1e6).toFixed(1)}M`);
+// Gold, with the logged figure on hover, when a Powerplay bonus lifts bounties.
+const bonusTip = (logged, paid) => (paid && logged && paid > logged
+  ? ` class="gold" title="${cr(logged)} Cr logged; worth ${cr(paid)} Cr cashed in where they were earned, with its Powerplay bounty bonus"` : "");
 // Stat-cell money, Stocks style: 41.3M, 590K. The full figure is in the tooltip.
 const short = (n) => {
   const v = n || 0;
@@ -684,12 +690,12 @@ function renderSide(s) {
   else if (s.ready.length) cond = "Every stack is finished";
   else cond = "No massacre missions in the journal";
 
-  const bounties = t.bounties;   // once per system: stacks there share one stream of kills
+  const bounties = t.bounties_paid ?? t.bounties;   // once per system: stacks there share one stream of kills
   const facts = [
     ["Per kill", t.cr_per_kill ? `${cr(t.cr_per_kill)} Cr` : "—"],
     ["Stacking saves", t.kills_saved ? `${cr(t.kills_saved)} kills` : "—"],
     ["One at a time", t.kills_naive ? `${cr(t.kills_naive)} kills` : "—"],
-    ["Bounties", bounties ? `${cr(bounties)} Cr` : "—"],
+    ["Bounties", bounties ? `${cr(bounties)} Cr` : "—", bonusTip(t.bounties, t.bounties_paid)],
     ["Missions", t.missions || "—"],
     ["To collect", t.ready_reward ? `${cr(t.ready_reward)} Cr` : "—"],
   ];
@@ -704,7 +710,7 @@ function renderSide(s) {
         ? "the game hasn’t counted some of your kills. The stack below says how many."
         : "some counts below can’t be separated in the journal."}</p>` : ""}
     </section>
-    <dl class="facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+    <dl class="facts">${facts.map(([k, v, tip]) => `<div><dt>${k}</dt><dd${tip || ""}>${v}</dd></div>`).join("")}</dl>
     ${standingHTML(s.imperial, s.powerplay, s.combat)}
     ${s.ready.length ? renderReady(s.ready, s.route) : ""}`;
 }
@@ -948,7 +954,8 @@ function stackCard(g, prev, solo, explained, target) {
     ...(g.eta_hours ? [["Finishes in", dur(g.eta_hours), `At ${paceWords(g.pace)}: ${paceRate(g.pace)}`]] : []),
     ["Rewards", short(g.reward), `${cr(g.reward)} Cr in mission rewards across ${plural(g.mission_count, "mission")}`],
     ["Per kill", short(g.cr_per_kill), `${cr(g.cr_per_kill)} Cr of mission pay a kill`],
-    ["Bounties", short(g.bounties || 0), `${cr(g.bounties || 0)} Cr in bounties here so far${g.bounty_kills ? `, from ${plural(g.bounty_kills, "kill")}` : ""}`],
+    ["Bounties", short(g.bounties_paid ?? g.bounties ?? 0), `${cr(g.bounties || 0)} Cr in bounties here so far${g.bounty_kills ? `, from ${plural(g.bounty_kills, "kill")}` : ""}${
+      g.bonus_rate ? `; ${cr(g.bounties_paid)} Cr cashed in here, with ${esc(g.bonus_power)}’s +${Math.round(g.bonus_rate * 100)}% ${esc((g.bonus_state || "").toLowerCase())} bonus` : ""}`, g.bonus_rate ? "gold" : ""],
     ...(g.bonds ? [["Combat bonds", short(g.bonds), `${cr(g.bonds)} Cr in combat bonds here`]] : []),
   ];
 
@@ -972,8 +979,8 @@ function stackCard(g, prev, solo, explained, target) {
             <span>${icon("pin")}${esc(g.system)}</span>
             <span class="${g.in_position ? "here-now" : ""}">${g.in_position ? "You’re here" : "Travel here"}</span>
           </p>
-          <dl class="stats">${stats.map(([k, v, tip]) =>
-            `<div title="${esc(tip)}"><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+          <dl class="stats">${stats.map(([k, v, tip, cls]) =>
+            `<div title="${esc(tip)}"><dt>${k}</dt><dd${cls ? ` class="${cls}"` : ""}>${v}</dd></div>`).join("")}</dl>
         </div>
         ${solo ? "" : `<div class="stack-num"><b>${cr(g.kills_needed)}${g.uncertain ? '<span class="plus">+</span>' : ""}</b><span>kills to go</span></div>`}
       </header>
@@ -1024,13 +1031,13 @@ function renderNow(s) {
     const items = [
       ["This session", dur(se.hours)],
       ["Kills", cr(se.kills)],
-      ["Bounties", `${cr(se.bounties)} Cr`],
+      ["Bounties", `${cr(se.bounties_paid ?? se.bounties)} Cr`, bonusTip(se.bounties, se.bounties_paid)],
       ...(se.bonds ? [["Combat bonds", `${cr(se.bonds)} Cr`]] : []),
       ["Mission pay", se.mission_credits ? `${cr(se.mission_credits)} Cr` : "—"],
       ["Merits", se.merits ? `+${cr(se.merits)}` : "—"],
       ["Per hour", se.kills || se.mission_credits ? `${cr(se.credits_per_hour)} Cr` : "—"],
     ];
-    html += `<div class="ticker">${items.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>`;
+    html += `<div class="ticker">${items.map(([k, v, tip]) => `<div><span>${k}</span><b${tip || ""}>${v}</b></div>`).join("")}</div>`;
   }
   const t = freshTarget(s);
   if (t && t.verdict !== "counts" && t.verdict !== "wrong_system") {

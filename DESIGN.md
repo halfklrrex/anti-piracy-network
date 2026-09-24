@@ -18,6 +18,7 @@ colors:
   imperial-wash: "rgba(184, 144, 255, .14)"
   green: "#34d15a"
   amber: "#ffb340"
+  gold: "#f0cc70"
   red: "#ff6b61"
   switch-track: "rgba(120, 120, 128, .38)"
 typography:
@@ -202,6 +203,7 @@ A near-monochrome plum-dark system with a single violet voice and three state co
 ### Tertiary (state only)
 - **System Green** (`green`): the live dot, money that is ready to collect, "you are here now", Allied/Friendly standing, and the target icon on a good target sentence.
 - **Signal Amber** (`amber`): the "+" on a count the game has not yet confirmed, capped missions, deadlines that will pass before a queued mission's turn, Unfriendly standing, a full mission-slot count, lost contact, and warning sentences.
+- **Bounty Gold** (`gold`): a bounty figure that includes a Powerplay cash-in bonus (session strip, side grid, stack figures). Softer and yellower than Signal Amber so it never reads as a warning.
 - **Alert Red** (`red`): expired deadlines, Hostile standing, and the sentence that says a locked target is clean (attacking it is a crime).
 
 ### Neutral
