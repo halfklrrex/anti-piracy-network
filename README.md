@@ -66,21 +66,18 @@ A real example, five missions against the Vequess Brotherhood in Vequess:
 Cemiess Commodities    15 + 4 + 9 + 15  = 43   <- queued, one at a time
 Cemiess Empire Party             10     = 10   <- runs alongside them
 
-cost of the stack = 43 kills   (not 53, and not 15)
+cost of the stack = 43 kills   (not 53)
 ```
 
-The journal confirms it: the four Commodities missions completed at cumulative
-kills 15, 19, 28 and 43, while the Empire Party one finished at kill 10.
-
 **So spread your missions across as many giving factions as you can.** Four
-missions from four factions cost you the biggest one; four from one faction cost
+missions from four factions cost you however many the biggest has; four from one faction cost
 all four added together.
 
 ## What you get
 
-- **Kills to go**, huge, for everything you hold, and per stack.
+- **Kills to go**, for everything you hold, and per stack.
 - **Each giver's queue on one kill scale**, so you can see which queue is
-  longest (*sets the pace*; hover it to see what that costs) and where each
+  longest (*sets the pace*) and where each
   queued mission starts ("Starts in 54 kills").
 - **A row of figures per stack**: next payout, time to finish, rewards, per kill
   and bounties. Hover any of them for the full amount and where it comes from.
@@ -89,11 +86,6 @@ all four added together.
 - **Bounties** earned in the stack's system since it began, beside the mission
   rewards, because you often take materials or reputation instead of credits.
   Combat bonds are kept separate.
-  Bounties show in **gold** when the system they were earned in pays a Powerplay
-  bonus on cashing them in: +40% in A. Lavigny-Duval and Yuri Grom strongholds,
-  +20% where they exploit (read off real cash-ins; it doesn't depend on your
-  pledge). The gold figure is what they're worth cashed in there; hover it for
-  the logged amount.
 - **Expiry warnings**: a queued mission earns nothing until its turn. If it won't
   get its kills before its deadline at your pace, its deadline turns amber.
 - **Target check**: lock a ship and the stack says whether killing it counts,
