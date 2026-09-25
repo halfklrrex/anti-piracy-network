@@ -629,7 +629,6 @@
 
 <div class="export" id="exportSheet" role="dialog" aria-label="Session image" hidden>
   <div class="export-sheet">
-    <img id="exportImg" alt="Session card">
     <div class="export-bar">
       <span class="copied" id="exportNote"></span>
       <button class="btn" type="button" id="exportCopy">Copy image</button>
@@ -1434,7 +1433,13 @@ async function openExport() {
   exportBlob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
   const day = new Date(lastState.session.started).toISOString().slice(0, 10);
   exportName = `Anti-Piracy Network session ${day}.png`;
-  $("exportImg").src = URL.createObjectURL(exportBlob);
+  // the preview is made on first use, so the page never holds an image with no source
+  let img = $("exportImg");
+  if (!img) {
+    img = Object.assign(document.createElement("img"), { id: "exportImg", alt: "Session card" });
+    $("exportSheet").firstElementChild.prepend(img);
+  } else URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(exportBlob);
   $("exportNote").textContent = "";
   $("exportSheet").hidden = false;
 }
