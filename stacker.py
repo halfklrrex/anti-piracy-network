@@ -238,6 +238,11 @@ class Tracker:
         self.system_pos = {}      # star system -> (x, y, z) in light years (hand-in route)
         self.system_power = {}    # star system -> (controlling power, powerplay state)
         self.factions = {}        # faction -> {"allegiance", "rep"} from the latest jump into its space
+        # The journal only states reputation on a jump into (or log-in in) a
+        # faction's space, so hand-ins since then are counted in "+" marks and
+        # converted at the rate this commander's own history shows.
+        self.rep_pending = {}     # faction -> net "+" marks from hand-ins since that reading
+        self.rep_samples = []     # reputation points per "+", measured between readings
         self.session_start = None # the latest LoadGame
         self.session_active = 0.0 # seconds actually playing since then
         self.power = {}           # Powerplay pledge: {"name", "rank", "merits"}
@@ -428,6 +433,7 @@ class Tracker:
                 self.system_pos[self.current_system] = tuple(pos)
             for fa in ev.get("Factions") or []:
                 if fa.get("Name"):
+                    self._rep_reading(fa["Name"], fa.get("MyReputation"))
                     self.factions[fa["Name"]] = {"allegiance": fa.get("Allegiance"),
                                                  "rep": fa.get("MyReputation")}
 
@@ -523,6 +529,12 @@ class Tracker:
                 self.ended[mid] = (name.replace("Mission", ""), ts)
             if name == "MissionCompleted":
                 self.paid.append((ts, ev.get("Reward") or 0))
+                for fe in ev.get("FactionEffects") or []:
+                    marks = len(str(fe.get("Reputation") or ""))
+                    if fe.get("Faction") and marks:
+                        down = "Down" in str(fe.get("ReputationTrend") or "")
+                        self.rep_pending[fe["Faction"]] = (self.rep_pending.get(fe["Faction"], 0)
+                                                           + (-marks if down else marks))
 
         elif name == "MissionRedirected":
             mid = ev.get("MissionID")
@@ -760,10 +772,31 @@ class Tracker:
             live = set(self.accepts)
         return len(live - set(self.ended))
 
+    def _rep_reading(self, faction, rep):
+        """A fresh reputation reading. If hand-ins moved it since the last one,
+        it measures how much a "+" is worth (not at the 100 ceiling, where
+        they add nothing)."""
+        marks = self.rep_pending.pop(faction, 0)
+        old = (self.factions.get(faction) or {}).get("rep")
+        if marks and rep is not None and old is not None and max(old, rep) < 99.5:
+            per = (rep - old) / marks
+            if 0 < per < 15:
+                self.rep_samples.append(per)
+
+    def rep_per_mark(self):
+        # The latest stretches: what a "+" is worth drifts over time.
+        s = sorted(self.rep_samples[-15:])
+        return s[len(s) // 2] if len(s) >= 5 else 4.0    # 4: the typical value in real journals
+
     def provider(self, name):
         info = self.factions.get(name) or {}
-        rep = info.get("rep")
-        return {"standing": standing(rep), "rep": rep, "allegiance": info.get("allegiance")}
+        logged = info.get("rep")
+        marks = self.rep_pending.get(name, 0)
+        rep = logged
+        if logged is not None and marks:
+            rep = max(-100.0, min(100.0, logged + marks * self.rep_per_mark()))
+        return {"standing": standing(rep), "rep": rep, "logged_rep": logged,
+                "since_marks": marks, "allegiance": info.get("allegiance")}
 
     def bounty_bonus(self, system):
         """What cashing bounties in this system adds: (rate, power, state)."""

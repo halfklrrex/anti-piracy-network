@@ -65,7 +65,8 @@ screen is traceable to a journal event.
   fine, in the current system (the `Wanted` / `ActiveFine` flags on the last
   jump in), with the amounts from `CommitCrime` events logged there. Cleared by
   `PayBounties` / `PayFines` or a clean jump back in.
-- Standing with each mission provider (as of the last jump into its space),
+- Standing with each mission provider (last reading on a jump into its space,
+  plus the "+" from missions handed in since, at the commander's measured rate),
   mission slots against the cap of 20, and a "this session" strip.
 - Ranks: combat rank with this session's estimated gain and kills to the next
   rank (progress is logged only at log-in; the gain uses the commander's own

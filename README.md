@@ -106,7 +106,9 @@ all four added together.
   it. An unpaid fine gets an amber line. The game's own flag on your last jump
   in is the authority; paying off, or jumping back in clean, clears it.
 - **Standing** with every mission provider (Neutral, Cordial, Friendly,
-  Allied…), as of your last jump into its space.
+  Allied…). The journal only states it when you jump into that faction's space,
+  so missions handed in since are added from their "+" marks, at the rate your
+  own journal shows (about 4 points each).
 - **This session**: time, kills, bounties, mission pay, merits and credits an
   hour.
 - **Mission slots** used, against the game's limit of 20.

@@ -650,7 +650,9 @@ const short = (n) => {
 const monthYear = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "");
 const dayMonth = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }) : "");
 const standingWord = (p) => (p && p.standing
-  ? `<span class="standing-word st-${p.standing}" title="Reputation ${Math.round(p.rep)} of 100, as of your last jump into this faction’s space">${p.standing}</span>` : "");
+  ? `<span class="standing-word st-${p.standing}" title="${esc(p.since_marks
+      ? `Reputation about ${Math.round(p.rep)} of 100: ${Math.round(p.logged_rep)} at your last jump into this faction’s space, plus the “+” from missions handed in since`
+      : `Reputation ${Math.round(p.rep)} of 100, as of your last jump into this faction’s space`)}">${p.standing}</span>` : "");
 const paceWords = (pace) => (pace && pace.source === "session" ? "this session’s pace" : "your usual pace");
 // The rate itself, stated as hunting time -- it counts only the time spent
 // fighting, so it reads faster than the session strip's kills over the whole
