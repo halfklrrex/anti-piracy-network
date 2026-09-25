@@ -122,7 +122,8 @@ Four pages, across the top:
 - **Commander**: this session in full (credits earned, kills an hour, bounties,
   bonds, mission pay, merits and your **crew share**, what your NPC fighter pilot
   has been paid as you cashed in), a **Copy session summary** button for Discord
-  or a squadron log, your ranks, and every faction you hold missions from or
+  or a squadron log, **Export image** for a 1600×900 PNG session card in your
+  style's colours and emblem (save it, or copy it straight into Discord), your ranks, and every faction you hold missions from or
   hunt, with standing and any state it's in (Boom, War, Famine...). A relog
   within half an hour, to refresh the mission boards say, is the same session.
 - **Statistics**: everything the journal has seen: lifetime earnings, a chart of

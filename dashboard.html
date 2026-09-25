@@ -501,6 +501,20 @@
      card; a reticle ring draws itself around the emblem, light blooms and
      sweeps across it, the greeting comes into focus, then everything dissolves
      back into the dashboard. About three seconds; any click or key skips it. */
+  /* ---------- session card export: a preview sheet over the page */
+  .session-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .export {
+    position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px;
+    background: rgba(6, 5, 10, .6);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    animation: welcome-veil .3s ease-out both;
+  }
+  .export[hidden] { display: none; }
+  .export-sheet { width: min(960px, 100%); display: grid; gap: 14px; animation: welcome-card .4s var(--ease-out) both; }
+  .export-sheet img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--hairline-strong);
+    box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .7); }
+  .export-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+  .export-bar .copied { margin-right: auto; }
   .welcome {
     position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px;
     background: rgba(6, 5, 10, .5);
@@ -612,6 +626,18 @@
   <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.8v3.7M12 17.5v3.7M2.8 12h3.7M17.5 12h3.7"/></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M5.5 5a2 2 0 0 1 2-2h11v15h-11a2 2 0 0 0-2 2z"/><path d="M5.5 20a2 2 0 0 0 2 1.5h11V18"/></symbol>
 </svg>
+
+<div class="export" id="exportSheet" role="dialog" aria-label="Session image" hidden>
+  <div class="export-sheet">
+    <img id="exportImg" alt="Session card">
+    <div class="export-bar">
+      <span class="copied" id="exportNote"></span>
+      <button class="btn" type="button" id="exportCopy">Copy image</button>
+      <button class="btn prime" type="button" id="exportSave">Save PNG</button>
+      <button class="btn" type="button" id="exportClose">Close</button>
+    </div>
+  </div>
+</div>
 
 <div class="welcome" id="welcome" aria-hidden="true" hidden>
   <div class="welcome-card">
@@ -1274,7 +1300,8 @@ function renderCommander(s) {
       ["Crew share", se.crew ? `${cr(se.crew)} Cr` : "—",
        se.crew_names && se.crew_names.length ? ` title="${esc(`Paid to ${se.crew_names.join(" and ")} as you cashed in`)}"` : ""],
     ])}
-    <p><button class="btn prime" type="button" id="copySummary">Copy session summary</button> <span id="copyNote" class="copied"></span></p>`
+    <p class="session-actions"><button class="btn prime" type="button" id="copySummary">Copy session summary</button>
+      <button class="btn" type="button" id="exportImage">Export image</button> <span id="copyNote" class="copied"></span></p>`
     : `<section class="hero"><p class="cond">No session yet</p><p class="sub">Log in to Elite Dangerous and it starts here.</p></section>`;
 
   const pv = s.providers || { givers: [], targets: [] };
@@ -1288,6 +1315,143 @@ function renderCommander(s) {
          "The factions your missions are against, and their state.") +
     `</div>`;
 }
+
+/* ---- the session card: drawn on a canvas in the style's colours */
+const cssVar = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
+function loadImage(src) {
+  return new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; });
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+async function drawSessionCard(s) {
+  const W = 1600, H = 900, pad = 88;
+  const se = s.session, st = s.style || { small: "Interstellar", main: "Anti-Piracy Network" };
+  const accent = cssVar("--imperial"), deep = cssVar("--imperial-deep"), ground = cssVar("--ground"),
+    top = cssVar("--ground-top"), label = cssVar("--label"), label2 = cssVar("--label-2"),
+    label3 = cssVar("--label-3"), gold = cssVar("--gold"), hair = "rgba(255, 255, 255, .09)";
+  await Promise.all(["300 150px Saira", "600 30px Saira", "500 26px Saira", "400 20px Saira"].map((f) => document.fonts.load(f)));
+  const emblem = await loadImage("/emblem");
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  const text = (str, x, y, font, color, opts = {}) => {
+    c.font = font; c.fillStyle = color; c.textAlign = opts.align || "left"; c.textBaseline = "alphabetic";
+    // the narrow space between thousands all but vanishes between big 1s
+    if (parseInt(font.split(" ")[1], 10) >= 30) str = str.replaceAll(NBSP, " ");
+    c.letterSpacing = opts.spacing || "0px"; c.fillText(str, x, y); c.letterSpacing = "0px";
+  };
+
+  // ground, glow, and the emblem as a watermark
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(.7, ground);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const glow = c.createRadialGradient(170, 140, 0, 170, 140, 520);
+  glow.addColorStop(0, accent + "40"); glow.addColorStop(1, "transparent");
+  c.fillStyle = glow; c.fillRect(0, 0, W, H);
+  if (emblem) { c.globalAlpha = .06; c.drawImage(emblem, 1010, 150, 640, 640); c.globalAlpha = 1; }
+  c.strokeStyle = hair; c.lineWidth = 2; roundRect(c, 24, 24, W - 48, H - 48, 28); c.stroke();
+
+  // header: emblem in its reticle ring, the network's name, the date
+  const cx = pad + 46, cy = 118;
+  c.strokeStyle = accent; c.lineWidth = 2.5; c.beginPath(); c.arc(cx, cy, 52, 0, Math.PI * 2); c.stroke();
+  c.beginPath(); [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(([dx, dy]) => {
+    c.moveTo(cx + dx * 56, cy + dy * 56); c.lineTo(cx + dx * 66, cy + dy * 66); }); c.stroke();
+  if (emblem) c.drawImage(emblem, cx - 34, cy - 34, 68, 68);
+  text(st.small.toUpperCase(), pad + 132, 110, "600 17px Saira", label3, { spacing: "5px" });
+  text(st.main.toUpperCase(), pad + 132, 142, "500 27px Saira", label, { spacing: "5px" });
+  const start = new Date(se.started);
+  text("SESSION REPORT", W - pad, 110, "600 16px Saira", accent, { align: "right", spacing: "5px" });
+  text(`${start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${clock(se.started)}–${clock(new Date().toISOString())}`,
+       W - pad, 142, "400 22px Saira", label2, { align: "right" });
+
+  // the headline: credits earned
+  const bounties = se.bounties_paid ?? se.bounties;
+  const earned = bounties + se.bonds + se.mission_credits;
+  text(crM(earned), pad - 6, 372, "300 168px Saira", label, { spacing: "-4px" });
+  text("credits earned", pad, 424, "600 32px Saira", label);
+  if (s.commander) text(`CMDR ${s.commander}`, pad, 466, "400 24px Saira", label2);
+
+  // ranks, on the right
+  const bars = [];
+  if (s.combat) bars.push([s.combat.title, s.combat.next || "", s.combat.progress / 100, (s.combat.gain || 0) / 100,
+    `${s.combat.progress}%${s.combat.gain ? ` · +${s.combat.gain}% this session` : ""}`]);
+  if (s.imperial && s.imperial.progress != null) bars.push([s.imperial.title, s.imperial.next || "", s.imperial.progress / 100,
+    (s.imperial.pending_gain || 0) / 100, `${s.imperial.progress}%${s.imperial.pending_gain ? ` · +${s.imperial.pending_gain}% after hand-in` : ""}`]);
+  const pp = s.powerplay;
+  if (pp && pp.rank != null) bars.push([`Rank ${pp.rank}`, `Rank ${pp.rank + 1}`,
+    (pp.merits - pp.rank_floor) / Math.max(1, pp.next_rank_at - pp.rank_floor), 0,
+    `${cr(pp.merits)} merits${pp.session ? ` · +${cr(pp.session)} this session` : ""}`]);
+  const rx = 960, rw = W - pad - rx;
+  text("RANKS", rx, 250, "600 16px Saira", label3, { spacing: "5px" });
+  bars.forEach(([lo, hi, p, pend, line], i) => {
+    const y = 300 + i * 88;
+    text(lo, rx, y, "600 20px Saira", label);
+    text(hi, rx + rw, y, "400 20px Saira", label2, { align: "right" });
+    const by = y + 16, at = Math.max(0, Math.min(1, p));
+    c.fillStyle = "rgba(255, 255, 255, .08)"; roundRect(c, rx, by, rw, 8, 4); c.fill();
+    if (pend) { c.fillStyle = accent + "66"; roundRect(c, rx + rw * at, by, rw * Math.min(pend, 1 - at), 8, 4); c.fill(); }
+    const fill = c.createLinearGradient(rx, 0, rx + rw * at, 0); fill.addColorStop(0, deep); fill.addColorStop(1, accent);
+    c.fillStyle = fill; roundRect(c, rx, by, Math.max(8, rw * at), 8, 4); c.fill();
+    text(line, rx, by + 38, "400 18px Saira", label2);
+  });
+
+  // the session's figures, in two rows of four
+  const figures = [
+    ["Time played", dur(se.hours)],
+    ["Kills", cr(se.kills)],
+    ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
+    ["Per hour", earned ? `${short(se.credits_per_hour)} Cr` : "—"],
+    ["Bounties", bounties ? `${short(bounties)} Cr` : "—", se.bounties_paid > se.bounties],
+    ["Mission pay", se.mission_credits ? `${short(se.mission_credits)} Cr` : "—"],
+    se.bonds && ["Combat bonds", `${short(se.bonds)} Cr`],
+    se.merits && ["Merits", `+${cr(se.merits)}`],
+    se.crew && ["Crew share", `${short(se.crew)} Cr`],
+  ].filter(Boolean).slice(0, 8);
+  const col = (W - pad * 2) / 4;
+  c.strokeStyle = hair; c.lineWidth = 1.5; c.beginPath(); c.moveTo(pad, 560); c.lineTo(W - pad, 560); c.stroke();
+  figures.forEach(([k, v, isGold], i) => {
+    const x = pad + (i % 4) * col, y = 614 + Math.floor(i / 4) * 94;
+    text(k, x, y, "400 20px Saira", label2);
+    // a boosted bounty is gold, or underlined in styles whose accent is gold already
+    const underline = isGold && document.body.dataset.bounty === "underline";
+    text(v, x, y + 42, "600 36px Saira", isGold && !underline ? gold : label);
+    if (underline) { c.fillStyle = accent; c.fillRect(x, y + 54, c.measureText(v).width, 3); }
+  });
+
+  // footer: what was hunted, and the network's mark
+  c.beginPath(); c.moveTo(pad, 790); c.lineTo(W - pad, 790); c.stroke();
+  const hunted = [...new Set((s.groups || []).map((gp) => `${gp.target_faction} · ${gp.system}`))].slice(0, 2).join("   ");
+  if (hunted) text(`Hunting ${hunted}`, pad, 840, "400 20px Saira", label2);
+  text(`${st.power ? `${st.power.toUpperCase()}  ·  ` : ""}ELITE DANGEROUS`, W - pad, 838, "600 15px Saira", label3,
+       { align: "right", spacing: "4px" });
+  return cv;
+}
+
+let exportBlob = null, exportName = "";
+async function openExport() {
+  if (!lastState || !lastState.session) return;
+  const cv = await drawSessionCard(lastState);
+  exportBlob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
+  const day = new Date(lastState.session.started).toISOString().slice(0, 10);
+  exportName = `Anti-Piracy Network session ${day}.png`;
+  $("exportImg").src = URL.createObjectURL(exportBlob);
+  $("exportNote").textContent = "";
+  $("exportSheet").hidden = false;
+}
+document.addEventListener("click", async (ev) => {
+  if (ev.target.closest("#exportImage")) openExport();
+  else if (ev.target.closest("#exportClose") || ev.target.id === "exportSheet") $("exportSheet").hidden = true;
+  else if (ev.target.closest("#exportSave") && exportBlob) {
+    const a = document.createElement("a"); a.href = $("exportImg").src; a.download = exportName; a.click();
+    $("exportNote").textContent = "Saved to your Downloads folder";
+  } else if (ev.target.closest("#exportCopy") && exportBlob) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": exportBlob })]);
+      $("exportNote").textContent = "Copied: paste it into Discord";
+    } catch (err) { $("exportNote").textContent = "Couldn’t copy; save it instead"; }
+  }
+});
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") $("exportSheet").hidden = true; });
 
 function sessionSummary(s) {
   const se = s.session, style = s.style ? s.style.name : "Anti-Piracy Network";
