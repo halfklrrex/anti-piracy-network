@@ -1,4 +1,4 @@
-"""Build "Anti-Piracy Network.exe": one file that runs without Python.
+"""Build "Anti-Piracy-Network.exe": one file that runs without Python.
 
     python -m pip install pyinstaller
     python build.py
@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-NAME = "Anti-Piracy Network"
+NAME = "Anti-Piracy-Network"      # hyphenated: GitHub turns spaces in release files into dots
 
 
 def png_to_ico(png, ico):

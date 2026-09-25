@@ -221,14 +221,14 @@ mission is 3 days past its deadline, its line turns amber.
 ## Options
 
 ```bash
-"Anti-Piracy Network.exe" --tab          # open as a browser tab, not a window
-"Anti-Piracy Network.exe" --no-browser   # open nothing; run until stopped
-"Anti-Piracy Network.exe" --console      # one-shot text summary, no window
-"Anti-Piracy Network.exe" --verify       # every past completion: logged vs. corrected
-"Anti-Piracy Network.exe" --port 8790    # a different port
-"Anti-Piracy Network.exe" --days 60      # scan further back (default 30)
-"Anti-Piracy Network.exe" --any-system   # count kills regardless of system
-"Anti-Piracy Network.exe" --journal-dir "D:\path\to\Elite Dangerous"
+Anti-Piracy-Network.exe --tab            # open as a browser tab, not a window
+Anti-Piracy-Network.exe --no-browser     # open nothing; run until stopped
+Anti-Piracy-Network.exe --console        # one-shot text summary, no window
+Anti-Piracy-Network.exe --verify         # every past completion: logged vs. corrected
+Anti-Piracy-Network.exe --port 8790      # a different port
+Anti-Piracy-Network.exe --days 60        # scan further back (default 30)
+Anti-Piracy-Network.exe --any-system     # count kills regardless of system
+Anti-Piracy-Network.exe --journal-dir "D:\path\to\Elite Dangerous"
 ```
 
 Run these from a terminal (Command Prompt or PowerShell); the text commands
@@ -272,7 +272,7 @@ python -m pip install pyinstaller
 python build.py
 ```
 
-The result is `dist/Anti-Piracy Network.exe`, with the dashboard, font and every style's emblem
+The result is `dist/Anti-Piracy-Network.exe`, with the dashboard, font and every style's emblem
 inside it. Your own `config.json`, `offsets.json` (hand corrections) and emblem
 live beside the .exe.
 

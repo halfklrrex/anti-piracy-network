@@ -40,7 +40,7 @@ APP_DIR = Path(sys.executable if FROZEN else __file__).resolve().parent
 RES_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
 APP_NAME = "Anti-Piracy Network"
 APP_FILE = APP_NAME           # the .exe, and the window's own browser profile folder
-PROG = f'"{APP_FILE}.exe"' if FROZEN else "python stacker.py"
+PROG = Path(sys.executable).name if FROZEN else "python stacker.py"   # the exe, however it's named
 DEFAULT_PORT = 8765
 MASSACRE_PREFIX = "Mission_Massacre"
 
