@@ -125,7 +125,7 @@ STYLES = {
                "#88a8ff", "#3a61d4", "#0d1224", "#ffffff", "gold"),
     "patreus": ("Denton Patreus", "Imperial Admiralty’s", "Anti-Piracy Network",
                 "#52d3c8", "#177f78", "#081a19", "#ffffff", "gold"),
-    "winters": ("Felicia Winters", "Federal Stellar", "Anti-Piracy Network",
+    "winters": ("Felicia Winters", "Federal", "Anti-Piracy Network",
                 "#f2c14e", "#b8871c", "#1a1408", "#0b0a0f", "underline"),
     "archer": ("Jerome Archer", "Federal Security Service", "Anti-Piracy Network",
                "#e27ce3", "#a13aa3", "#1b0d1c", "#ffffff", "gold"),
@@ -140,7 +140,7 @@ STYLES = {
     "grom": ("Yuri Grom", "EG Union", "Anti-Piracy Network",
              "#ec8a55", "#b35020", "#1c0f09", "#ffffff", "gold"),
     "interstellar": (None, "Interstellar", "Anti-Piracy Network",
-                     "#a9bdd6", "#4f627c", "#0d1219", "#ffffff", "gold"),
+                     "#f0823a", "#ad4a12", "#1b0f07", "#ffffff", "gold"),
 }
 POWER_STYLE = {v[0]: k for k, v in STYLES.items() if v[0]}
 

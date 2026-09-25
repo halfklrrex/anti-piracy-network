@@ -232,7 +232,7 @@ an Anti-Piracy Network), gets the Interstellar style.
 | Aisling Duval | Her Highness' Anti-Piracy Network |
 | Denton Patreus | Imperial Admiralty's Anti-Piracy Network |
 | Zemina Torval | Torval Mining Ltd's Anti-Piracy Network |
-| Felicia Winters | Federal Stellar Anti-Piracy Network |
+| Felicia Winters | Federal Anti-Piracy Network |
 | Jerome Archer | Federal Security Service Anti-Piracy Network |
 | Edmund Mahon | Alliance Defence Force Anti-Piracy Network |
 | Nakato Kaine | Free Alliance Anti-Piracy Network |
