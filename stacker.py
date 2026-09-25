@@ -89,6 +89,29 @@ IMPERIAL_RANKS = ["None", "Outsider", "Serf", "Master", "Squire", "Knight", "Lor
 BOUNTY_BONUS_POWERS = {"A. Lavigny-Duval", "Yuri Grom"}
 BOUNTY_BONUS_BY_STATE = {"Exploited": 0.2, "Fortified": 0.3, "Stronghold": 0.4}
 
+# Who a kill was. The journal writes a pirate's kill and a deserter's alike,
+# but the NPCs say who they are on the radio ($Pirate_..., $Deserter_...), and
+# a fight is one group. Checked against the game's own completions when Pirates
+# and Deserters (Irukama) or Pirates and Infected (Melcior) missions ran at
+# once: the talking pirates matched the Pirates count, and the fights where
+# nobody talked (all Master or Dangerous ships) matched the Deserters count.
+CHATTER_KIND = {"Pirate": "pirate", "PirateLord": "pirate", "Deserter": "deserter",
+                "InfectedShip": "infected", "Smuggler": "smuggler"}
+MISSION_KIND = {"Pirate": "pirate", "Deserter": "deserter", "Infected": "infected",
+                "Smuggler": "smuggler"}
+FIGHT_BREAKS = {"SupercruiseExit", "SupercruiseEntry", "FSDJump", "CarrierJump",
+                "Location", "LoadGame", "Died"}
+
+
+def mission_kind(target_type):
+    """'$MissionUtil_FactionTag_Deserter;' -> 'deserter' (the code, not the
+    translated name, so it works in every game language)."""
+    for key, kind in MISSION_KIND.items():
+        if f"FactionTag_{key};" in str(target_type or ""):
+            return kind
+    return None
+
+
 COMBAT_RANKS = ["Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master",
                 "Dangerous", "Deadly", "Elite", "Elite I", "Elite II", "Elite III",
                 "Elite IV", "Elite V"]
@@ -224,6 +247,9 @@ class Tracker:
         self.redirected = {}      # MissionID -> timestamp (objective complete)
         self.turn_in = {}         # MissionID -> {system, station}
         self.kills = []           # (timestamp, victim_faction, star_system)
+        self.kill_fight = []      # the fight each kill was in, index for index
+        self.fight = 0            # a new one at every drop, jump or log-in
+        self.fight_talk = {}      # fight -> what its NPCs said they were ({"pirate", ...})
         self.snapshot = None      # latest "Missions" event
         self.last_dock = {}       # where we were standing when a mission was taken
         self.current_system = None
@@ -410,6 +436,8 @@ class Tracker:
 
         name = ev.get("event")
         ts = parse_ts(ev.get("timestamp"))
+        if name in FIGHT_BREAKS:
+            self.fight += 1
         if ts:
             # Session time counts gaps between events, any gap over 10 minutes
             # as a break -- a game left open overnight isn't a 19-hour session.
@@ -469,6 +497,11 @@ class Tracker:
         elif name == "ShipTargeted":
             self._target(ev, ts)
 
+        elif name == "ReceiveText" and ev.get("Channel") == "npc":
+            family = str(ev.get("Message") or "").lstrip("$").split("_", 1)[0]
+            if family in CHATTER_KIND:
+                self.fight_talk.setdefault(self.fight, set()).add(CHATTER_KIND[family])
+
         elif name == "CommitCrime":
             kind = "bounty" if ev.get("Bounty") else "fine" if ev.get("Fine") else None
             if kind and self.current_system:
@@ -511,6 +544,7 @@ class Tracker:
                 "giver": ev.get("Faction"),
                 "target_faction": ev.get("TargetFaction"),
                 "target_type": ev.get("TargetType_Localised") or "Ships",
+                "target_kind": mission_kind(ev.get("TargetType")),
                 "kill_count": ev.get("KillCount") or 0,
                 "system": ev.get("DestinationSystem"),
                 "station": ev.get("DestinationStation"),
@@ -551,6 +585,7 @@ class Tracker:
             # Bounty = bounty-hunting kills, FactionKillBond = combat-zone kills.
             # Massacre missions count both, so we do too.
             self.kills.append((ts, ev.get("VictimFaction"), self.current_system))
+            self.kill_fight.append(self.fight)
             # Income is kept apart by kind: bounties from wanted ships, combat
             # bonds from conflict zones. They pay at different places.
             if name == "Bounty":
@@ -626,9 +661,12 @@ class Tracker:
         # A predecessor's last kill belongs to the predecessor, so when the
         # anchor is another mission finishing, that kill is excluded.
         strict = since is not None and since != mission["accepted"]
+        kind = mission.get("target_kind")
         total = 0
-        for ts, victim, where in self.kills:
+        for i, (ts, victim, where) in enumerate(self.kills):
             if victim != faction:
+                continue
+            if not self.kill_fits(i, kind, faction, system):
                 continue
             if start and ts and (ts <= start if strict else ts < start):
                 continue
@@ -637,15 +675,37 @@ class Tracker:
             total += 1
         return total
 
+    def kill_fits(self, i, kind, faction, system):
+        """Could kill i count for a mission against `kind` ships of this
+        faction? Only the kinds the radio tells apart are sorted; a fight where
+        nobody said who they were is deserters while a Deserters mission
+        against them is running here, and pirates otherwise."""
+        if kind not in CHATTER_KIND.values():
+            return True
+        said = self.fight_talk.get(self.kill_fight[i]) if i < len(self.kill_fight) else None
+        if said:
+            return kind in said
+        ts = self.kills[i][0]
+        hunting_deserters = any(
+            m["target_kind"] == "deserter" and m["target_faction"] == faction
+            and m["system"] == system and m["accepted"] and ts and m["accepted"] <= ts
+            and not (mid in self.ended and self.ended[mid][1] and self.ended[mid][1] < ts)
+            for mid, m in self.missions.items())
+        return kind == ("deserter" if hunting_deserters else "pirate")
+
     def credit_frame(self, faction, target_type, system):
         """The kill stream behind one stack, pinned by every completion of a
         mission on it. Pirates and Deserters of one faction share the logged
-        kills but not the counting, so each target type gets its own pins."""
-        times = sorted(ts for ts, victim, where in self.kills
-                       if ts and victim == faction
-                       and not (self.require_system and system and where and where != system))
-        frame = CreditFrame(times)
+        kills but not the counting, so each target type gets its own stream
+        (see kill_fits) and its own pins."""
         key = (faction, target_type, system)
+        kind = next((m.get("target_kind") for m in self.missions.values()
+                     if (m["target_faction"], m["target_type"], m["system"]) == key), None)
+        times = sorted(ts for i, (ts, victim, where) in enumerate(self.kills)
+                       if ts and victim == faction
+                       and not (self.require_system and system and where and where != system)
+                       and self.kill_fits(i, kind, faction, system))
+        frame = CreditFrame(times)
         finished = sorted((when, mid) for mid, when in self.redirected.items()
                           if when and mid in self.missions
                           and (self.missions[mid]["target_faction"], self.missions[mid]["target_type"],
@@ -971,15 +1031,18 @@ class Tracker:
                 key = (m["target_faction"] or "Unknown", m["target_type"] or "Ships",
                        m["system"] or "Unknown")
                 buckets.setdefault(key, []).append((mid, m))
-            # ...but the journal writes both kinds of kill identically, so where
-            # one faction has both in play, neither estimate can be separated.
+            # The journal writes both kinds of kill alike; the NPCs' radio
+            # chatter sorts pirates, deserters and infected ships (kill_fits).
+            # Only kinds it can't sort still share one uncertain count.
             by_faction = {}
-            for faction, ttype, system in buckets:
-                by_faction.setdefault((faction, system), set()).add(ttype)
+            for (faction, ttype, system), members in buckets.items():
+                by_faction.setdefault((faction, system), set()).add(members[0][1].get("target_kind"))
+            sortable = set(CHATTER_KIND.values())
 
             groups = []
             for (faction, target_type, system), members in buckets.items():
-                mixed = len(by_faction[(faction, system)]) > 1
+                kinds = by_faction[(faction, system)]
+                mixed = len(kinds) > 1 and not kinds <= sortable
                 # Every mission here shares one kill stream. But missions from
                 # the SAME giving faction queue up behind each other, so a stack
                 # costs the biggest single giver's total -- not the biggest

@@ -943,7 +943,7 @@ function stackCard(g, prev, solo, explained, target, slotsFree) {
     const key = `${g.target_faction}|${g.system}`;
     if (!explained.has(key)) {
       explained.add(key);
-      says.push(`<p class="say warn">${icon("alert")}<span>Pirates and Deserters are both in play — the journal can’t tell their kills apart, so trust the game’s completions.</span></p>`);
+      says.push(`<p class="say warn">${icon("alert")}<span>Two kinds of target are both in play here — the journal can’t tell their kills apart, so trust the game’s completions.</span></p>`);
     } else {
       says.push(`<p class="say">${icon("up")}<span>Shares its kills with the ${esc(g.target_faction)} stack above.</span></p>`);
     }

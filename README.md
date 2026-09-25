@@ -156,8 +156,8 @@ in the author's journal:
 
 - **46** came exactly when the bounties said they would;
 - **21** came later: the game had counted fewer kills than it paid bounties for
-  (6 of those in stacks where Pirates and Deserters of one faction were mixed,
-  which the journal can't tell apart);
+  (6 of those in stacks where Pirates and Deserters, or Infected ships, of one
+  faction were mixed; see below);
 - **14** came earlier: the game counted kills that paid no bounty.
 
 Nothing in a kill's journal entry tells a counted kill from an uncounted one. What
@@ -172,6 +172,14 @@ the game *does* say is when a mission is done, so the app uses that:
   didn't count, and the whole stack is **held** there: rows read `9+ left` ("at
   least 9"), the mission holding things up is in amber, and the stack says how
   many kills didn't count. The next completion clears it.
+- **Pirates, deserters and infected ships are told apart by what they say.** The
+  journal logs their kills identically, but the NPCs announce themselves on the
+  radio. A fight with pirate chatter counts for Pirates missions; one where
+  nobody talks counts for Deserters missions while you hold one against that
+  faction there (deserters fly silent), and for Pirates otherwise. Checked
+  against every mixed stack in the author's journal: the Deserters and Pirates
+  missions run together at Irukama both land exactly, where counting every kill
+  for both had been 15 and 18 kills over.
 - **Sync** is the escape hatch: type what the in-game transactions panel shows
   on a row; **Clear correction** removes it.
 

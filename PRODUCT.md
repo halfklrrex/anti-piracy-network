@@ -80,9 +80,10 @@ screen is traceable to a journal event.
 - Toggles: hand-in station on every mission; count kills only in the target system.
 - Declined by the commander: a mission-board calculator, sounds, hunting-ground
   statistics, and a phone/LAN view.
-- The journal cannot see the mission board, cannot tell a Deserter kill from a
-  Pirate kill of the same faction, and writes no event when a finished mission
-  is dropped.
+- The journal cannot see the mission board and writes no event when a finished
+  mission is dropped. It logs a Deserter kill and a Pirate kill alike; the app
+  sorts them by the NPCs' radio chatter (silent fights count as deserters while
+  a Deserters mission against that faction is running there).
 
 ## Brand Commitments
 
