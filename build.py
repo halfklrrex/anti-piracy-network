@@ -51,6 +51,8 @@ def main():
         "--specpath", str(work),
         *data(HERE / "dashboard.html", "."),
         *[arg for png in sorted((HERE / "styles").glob("*.png")) for arg in data(png, "styles")],
+        # Arissa's emblem, if a synced folder has moved it back to the top level.
+        *(data(HERE / "emblem.png", ".") if (HERE / "emblem.png").is_file() else []),
         # File by file: an escaped folder pattern nests as fonts/fonts/.
         *data(HERE / "fonts" / "saira.woff2", "fonts"),
         *data(HERE / "fonts" / "OFL.txt", "fonts"),

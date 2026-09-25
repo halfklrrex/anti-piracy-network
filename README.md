@@ -260,7 +260,7 @@ an Anti-Piracy Network), gets the Interstellar style.
 
 - **Style**: pick one under **Settings**, or leave it on **Automatic** to wear the
   style of the power you're pledged to (read from your journal).
-- **Emblem**: put an `emblem.png` (or `.svg`, `.webp`, `.jpg`) beside the .exe or
+- **Emblem**: put a `my-emblem.png` (or `.svg`, `.webp`, `.jpg`) beside the .exe or
   `stacker.py` and it replaces the style's emblem. It's also the browser-tab icon.
 - **Typeface**: Saira, bundled in `fonts/` so the page never loads anything from
   the internet.

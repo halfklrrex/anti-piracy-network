@@ -12,3 +12,6 @@ dist/
 # Design-tool working files
 .impeccable/review/
 .impeccable/hook.cache.json
+
+# Arissa's emblem lives in styles/ald.png; a synced folder may restore an old copy here
+/emblem.png

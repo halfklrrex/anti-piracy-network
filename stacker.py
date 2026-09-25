@@ -1965,6 +1965,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def _style_image(self, slug):
         path = RES_DIR / "styles" / f"{slug}.png"
+        if slug == "ald" and not path.is_file():
+            # Arissa's emblem once lived at the top level as emblem.png, and a
+            # synced folder (iCloud Drive) has been known to move it back.
+            path = RES_DIR / "emblem.png"
         if slug in STYLES and path.is_file():
             self._send(200, path.read_bytes(), "image/png")
         else:
@@ -1995,12 +1999,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, body, "application/json; charset=utf-8")
 
         elif route == "/emblem":
-            # The style's emblem, unless you've put an emblem image of your
-            # own beside stacker.py (or the .exe).
+            # The style's emblem, unless you've put one of your own beside
+            # stacker.py (or the .exe) as my-emblem.png / .svg / .webp / .jpg.
             types = {".svg": "image/svg+xml", ".png": "image/png",
                      ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
             for suffix, ctype in types.items():
-                path = APP_DIR / f"emblem{suffix}"
+                path = APP_DIR / f"my-emblem{suffix}"
                 if path.is_file():
                     self._send(200, path.read_bytes(), ctype)
                     return
