@@ -371,8 +371,57 @@
   .m-due.risk { color: var(--amber); }
   .st-order { color: var(--imperial); font-weight: 600; margin-right: 6px; }
 
-  /* ---------- journal view */
-  #journalView .side { position: static; max-height: none; overflow: visible; }
+  /* ---------- the other pages: side columns scroll with the page */
+  #commanderView .side, #statsView .side { position: static; max-height: none; overflow: visible; }
+  .layout.one { grid-template-columns: minmax(0, 1fr); max-width: 980px; }
+  .card-body { padding: 0 22px 18px; }
+  .cards2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
+  @media (max-width: 1180px) { .cards2 { grid-template-columns: minmax(0, 1fr); } }
+
+  /* bar lists: a name, a thin bar on one scale, the count */
+  .bars { list-style: none; margin: 0; padding: 0 22px 18px; display: grid; gap: 10px; }
+  .bars li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, 34%) 58px; gap: 12px; align-items: center; font-size: 13px; }
+  .bars .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--label); }
+  .bars .n small { color: var(--label-3); font-size: 12px; margin-left: 6px; }
+  .bars .t { position: relative; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .045); overflow: hidden; }
+  .bars .t i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: linear-gradient(90deg, var(--imperial-deep), var(--imperial)); }
+  .bars .v { text-align: right; font-weight: 600; white-space: nowrap; }
+
+  /* the earnings chart: one series, thin bars, quiet axis, a tooltip per bar */
+  .chart { position: relative; padding: 6px 22px 18px; }
+  .chart svg { display: block; width: 100%; height: 220px; overflow: visible; }
+  .chart .axis line { stroke: var(--hairline); }
+  .chart .axis text { fill: var(--label-3); font: 11px var(--sans); }
+  .chart .bar { fill: var(--imperial); }
+  .chart .hit { fill: transparent; }
+  .chart g.on .bar { fill: color-mix(in srgb, var(--imperial) 72%, #ffffff); }
+  .tip {
+    position: absolute; z-index: 5; pointer-events: none; transform: translate(-50%, calc(-100% - 10px));
+    padding: 8px 10px; border-radius: 8px; border: 1px solid var(--hairline-strong);
+    background: color-mix(in srgb, var(--surface-3) 96%, transparent); box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .6);
+    font-size: 12px; color: var(--label-2); white-space: nowrap;
+  }
+  .tip b { display: block; color: var(--label); font-size: 13px; }
+
+  /* history: one line per session, each opens its own page */
+  .sessions { list-style: none; margin: 0; padding: 0; }
+  .sessions a {
+    display: grid; grid-template-columns: minmax(0, 1fr) 80px 70px 90px 14px; gap: 16px; align-items: center;
+    padding: 13px 22px; border-top: 1px solid var(--hairline); color: inherit; text-decoration: none; font-size: 13px;
+  }
+  .sessions a:hover { background: rgba(255, 255, 255, .04); }
+  .sessions a:focus-visible { outline: 2px solid var(--imperial); outline-offset: -2px; }
+  .sessions b { font-size: 15px; font-weight: 600; }
+  .sessions small { margin-left: 8px; font-size: 12px; color: var(--label-3); }
+  .sessions span:not(:first-child) { text-align: right; color: var(--label-2); white-space: nowrap; }
+  .sessions .chev { width: 14px; height: 14px; color: var(--label-3); }
+  .back { display: inline-flex; align-items: center; gap: 6px; color: var(--imperial); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .back svg { width: 14px; height: 14px; transform: rotate(180deg); }
+  .states { color: var(--label-2); font-size: 12.5px; margin-left: 8px; }
+  .provider-list { list-style: none; margin: 0; padding: 0 22px 16px; }
+  .provider-list li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hairline); font-size: 13px; }
+  .provider-list li:first-child { border-top: 0; }
+  .copied { color: var(--green); }
   .kv { margin: 0; }
   .kv div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hairline); font-size: 13px; }
   .kv dt { color: var(--label-2); min-width: 0; }
@@ -434,7 +483,8 @@
       font-size: 11.5px; color: var(--label-3); font-weight: 400;
     }
     .hist li > .per-hour { display: block; }
-    .status .place-now, .tools .label { display: none; }
+    .status .place-now, .tools .label, .slots .word { display: none; }
+    .viewbar .segmented button { padding: 0 8px; }
     .wordmark h1 { letter-spacing: .12em; }
     .wordmark h1 small { letter-spacing: .19em; }
     .big { font-size: 80px; }
@@ -598,8 +648,10 @@
   <div class="spacer"></div>
   <div class="viewbar">
     <div class="segmented" role="tablist" aria-label="View">
-      <button type="button" role="tab" data-view="stacks" aria-selected="true">Stacks</button>
-      <button type="button" role="tab" data-view="journal" aria-selected="false">Journal</button>
+      <button type="button" role="tab" data-view="stacks" aria-selected="true">Hunt</button>
+      <button type="button" role="tab" data-view="commander" aria-selected="false">Commander</button>
+      <button type="button" role="tab" data-view="stats" aria-selected="false">Statistics</button>
+      <button type="button" role="tab" data-view="history" aria-selected="false">History</button>
     </div>
     <span class="slots" id="slots" title="Missions of every kind you're holding, against the game's limit of 20"></span>
   </div>
@@ -642,9 +694,18 @@
   </main>
 </div>
 
-<div class="layout" id="journalView" hidden>
-  <aside class="side" id="jside" aria-label="Lifetime summary"></aside>
-  <main class="main" id="jmain"></main>
+<div class="layout" id="commanderView" hidden>
+  <aside class="side" id="cside" aria-label="This session"></aside>
+  <main class="main" id="cmain"></main>
+</div>
+
+<div class="layout" id="statsView" hidden>
+  <aside class="side" id="sside" aria-label="Lifetime"></aside>
+  <main class="main" id="smain"></main>
+</div>
+
+<div class="layout one" id="historyView" hidden>
+  <main class="main" id="hmain"></main>
 </div>
 
 <script>
@@ -744,7 +805,6 @@ function renderSide(s) {
         : "some counts below can’t be separated in the journal."}</p>` : ""}
     </section>
     <dl class="facts">${facts.map(([k, v, tip]) => `<div><dt>${k}</dt><dd${tip || ""}>${v}</dd></div>`).join("")}</dl>
-    ${standingHTML(s.imperial, s.powerplay, s.combat)}
     ${s.ready.length ? renderReady(s.ready, s.route) : ""}`;
 }
 
@@ -775,7 +835,7 @@ function standingHTML(imp, pp, cb) {
       ${rankBar(cb.title, cb.next || "", cb.progress / 100, cb.gain ? cb.gain / 100 : 0,
                 `Combat: ${cb.progress}% toward ${cb.next || "the top"}`)}
       <p${why}><b>${cb.progress}%</b>${cb.gain ? ` · <b>+${cb.gain}%</b> this session` : ""}${
-        cb.kills_to_next != null ? ` · about ${cr(cb.kills_to_next)} kills to go` : ""}</p>
+        cb.kills_to_next != null ? ` · about ${cr(cb.kills_to_next)} kills to go${cb.eta_hours ? ` (${dur(cb.eta_hours)})` : ""}` : ""}</p>
     </div>`;
   }
   if (imp && imp.progress != null) {
@@ -798,7 +858,7 @@ function standingHTML(imp, pp, cb) {
       html += `<div class="rankbar" title="${esc(pp.power)}">
         ${rankBar(`Rank ${pp.rank}`, `Rank ${pp.rank + 1}`, span ? (pp.merits - pp.rank_floor) / span : 0, 0,
                   `${pp.power}: ${pp.merits} merits toward rank ${pp.rank + 1}`)}
-        <p><b>${cr(pp.merits)}</b> merits · ${cr(pp.to_next)} to go${session}</p>
+        <p><b>${cr(pp.merits)}</b> merits · ${cr(pp.to_next)} to go${pp.eta_hours ? ` (${dur(pp.eta_hours)})` : ""}${session}</p>
       </div>`;
     }
   }
@@ -1136,7 +1196,7 @@ function apply(s) {
     renderSide(s);
     renderNow(s);
     renderStacks(s, prevP);
-    if (view === "journal" && lastHistory) renderJournal(lastHistory);
+    renderCommander(s);
     prevP.clear();
     document.querySelectorAll(".mission .track i[data-p]").forEach((el) => {
       prevP.set(Number(el.closest(".mission").dataset.id), Number(el.dataset.p));
@@ -1159,44 +1219,177 @@ function tickClocks() {
   });
 }
 
-/* ------------------------------------------------------------------ journal */
+/* ------------------------------------------------------------------ pages */
 
-let view = "stacks", lastHistory = null;
+let view = "stacks", sub = null, lastHistory = null;
+const stateWords = (list) => (list || []).map((s) => s.replace(/([a-z])([A-Z])/g, "$1 $2")).join(", ");
+const factsHTML = (rows) => `<dl class="facts">${rows.map(([k, v, tip]) =>
+  `<div><dt>${k}</dt><dd${tip || ""}>${v}</dd></div>`).join("")}</dl>`;
+const barList = (rows, value = (r) => cr(r.count), sub = () => "") => {
+  if (!rows || !rows.length) return '<p class="card-body dim">Nothing yet.</p>';
+  const most = Math.max(...rows.map((r) => r.count || r.credits || 0), 1);
+  return `<ol class="bars">${rows.map((r) => `<li>
+    <span class="n">${esc(r.name)}${sub(r) ? `<small>${sub(r)}</small>` : ""}</span>
+    <span class="t"><i style="width:${(((r.count || r.credits || 0) / most) * 100).toFixed(1)}%"></i></span>
+    <span class="v">${value(r)}</span></li>`).join("")}</ol>`;
+};
+const card = (title, body, note = "") => `
+  <article class="stack">
+    <header class="stack-head"><div class="stack-id"><h2>${title}</h2>${note ? `<p class="stack-pay">${note}</p>` : ""}</div></header>
+    ${body}
+  </article>`;
+const sessionEarned = (s) => (s.bounties || 0) + (s.bonds || 0) + (s.paid || 0);
+const dayLabel = (iso) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+const clock = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+function ago(iso) {
+  const then = new Date(iso), now = new Date();
+  const days = Math.round((new Date(now.toDateString()) - new Date(then.toDateString())) / 864e5);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 14) return "Last week";
+  if (days < 60) return `${Math.round(days / 7)} weeks ago`;
+  return `${Math.round(days / 30)} months ago`;
+}
 
-function renderJournal(h) {
-  lastHistory = h;
-  const t = h.totals;
-  const facts = [
-    ["Massacre missions", cr(t.massacres_completed)],
-    ["Stacks completed", cr(t.stacks)],
-    ["Kills", cr(t.kills)],
-    ["Hunting time", dur(t.hunting_hours)],
-    ["Usual pace", h.usual_pace ? `${h.usual_pace} kills/h` : "—"],
-    ["Merits earned", cr(t.merits)],
-    ["Combat bonds", t.bonds ? `${colM(t.bonds)} Cr` : "—"],
-    ["Stacks run", cr(h.stacks.length)],
+/* ---- Commander: this session, ranks, the factions you work with */
+function renderCommander(s) {
+  const se = s.session;
+  const bounties = se ? (se.bounties_paid ?? se.bounties) : 0;
+  const earned = se ? bounties + se.bonds + se.mission_credits : 0;
+  $("cside").innerHTML = se ? `
+    <section class="hero">
+      <p class="place">${icon("clock")}This session</p>
+      <p class="big">${crM(earned)}</p>
+      <p class="cond">credits earned</p>
+      <p class="sub">${dur(se.hours)} of play · ${plural(se.kills, "kill")}</p>
+    </section>
+    ${factsHTML([
+      ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
+      ["Per hour", earned ? `${cr(se.credits_per_hour)} Cr` : "—"],
+      ["Bounties", bounties ? `${cr(bounties)} Cr` : "—", bonusTip(se.bounties, se.bounties_paid)],
+      ["Combat bonds", se.bonds ? `${cr(se.bonds)} Cr` : "—"],
+      ["Mission pay", se.mission_credits ? `${cr(se.mission_credits)} Cr` : "—"],
+      ["Merits", se.merits ? `+${cr(se.merits)}` : "—"],
+      ["Crew share", se.crew ? `${cr(se.crew)} Cr` : "—",
+       se.crew_names && se.crew_names.length ? ` title="${esc(`Paid to ${se.crew_names.join(" and ")} as you cashed in`)}"` : ""],
+    ])}
+    <p><button class="btn prime" type="button" id="copySummary">Copy session summary</button> <span id="copyNote" class="copied"></span></p>`
+    : `<section class="hero"><p class="cond">No session yet</p><p class="sub">Log in to Elite Dangerous and it starts here.</p></section>`;
+
+  const pv = s.providers || { givers: [], targets: [] };
+  const row = (f) => `<li><span>${esc(f.name)}${standingWord(f)}</span><span class="states">${esc(stateWords(f.states))}</span></li>`;
+  $("cmain").innerHTML =
+    card("Ranks", `<div class="card-body">${standingHTML(s.imperial, s.powerplay, s.combat).replace("<h2>Ranks</h2>", "")}</div>`) +
+    `<div class="cards2">` +
+    card("Mission providers", pv.givers.length ? `<ol class="provider-list">${pv.givers.map(row).join("")}</ol>` : '<p class="card-body dim">No missions held.</p>',
+         "Standing, and any state the faction is in (as of your last jump into its space).") +
+    card("Targets", pv.targets.length ? `<ol class="provider-list">${pv.targets.map(row).join("")}</ol>` : '<p class="card-body dim">No targets.</p>',
+         "The factions your missions are against, and their state.") +
+    `</div>`;
+}
+
+function sessionSummary(s) {
+  const se = s.session, style = s.style ? s.style.name : "Anti-Piracy Network";
+  const bounties = se.bounties_paid ?? se.bounties;
+  const lines = [
+    `${style} — session of ${new Date(se.started).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`,
+    `CMDR ${s.commander || "?"} · ${dur(se.hours)} of play · ${cr(se.kills)} kills (${cr(se.kills_per_hour)} an hour)`,
+    `Bounties ${cr(bounties)} Cr · Mission pay ${cr(se.mission_credits)} Cr${se.bonds ? ` · Combat bonds ${cr(se.bonds)} Cr` : ""}`,
+    `${cr(se.credits_per_hour)} Cr an hour${se.merits ? ` · +${cr(se.merits)} merits` : ""}${se.crew ? ` · crew share ${cr(se.crew)} Cr` : ""}`,
   ];
+  const ranks = [];
+  if (s.combat) ranks.push(`${s.combat.title} ${s.combat.progress}%${s.combat.gain ? ` (+${s.combat.gain}%)` : ""}`);
+  if (s.imperial && s.imperial.progress != null) ranks.push(`${s.imperial.title} ${s.imperial.progress}%`);
+  if (s.powerplay && s.powerplay.rank != null) ranks.push(`${s.powerplay.power} rank ${s.powerplay.rank}`);
+  if (ranks.length) lines.push(ranks.join(" · "));
+  return lines.join("\n");
+}
+document.addEventListener("click", async (ev) => {
+  if (!ev.target.closest("#copySummary") || !lastState || !lastState.session) return;
+  try {
+    await navigator.clipboard.writeText(sessionSummary(lastState));
+    $("copyNote").textContent = "Copied";
+    setTimeout(() => { const n = $("copyNote"); if (n) n.textContent = ""; }, 2000);
+  } catch (err) { $("copyNote").textContent = "Couldn’t copy"; }
+});
+
+/* ---- Statistics: everything the journal has seen */
+function earningsChart(sessions) {
+  const runs = sessions.filter((s) => s.hours >= 0.25 && sessionEarned(s) > 0).slice(0, 30).reverse();
+  if (runs.length < 2) return '<p class="card-body dim">A couple of sessions are needed for this chart.</p>';
+  return `<div class="chart" id="earnChart" data-runs='${esc(JSON.stringify(runs.map((s) => ({
+    start: s.start, hours: s.hours, earned: sessionEarned(s), rate: Math.round(sessionEarned(s) / s.hours) }))))}'></div>`;
+}
+function drawChart() {
+  const box = $("earnChart");
+  if (!box || !box.clientWidth) return;
+  const runs = JSON.parse(box.dataset.runs);
+  const W = box.clientWidth - 44, H = 220, left = 46, bottom = 22, top = 8;
+  const max = Math.max(...runs.map((r) => r.rate));
+  const step = (() => { const raw = max / 3, mag = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw); })();
+  const ceil = Math.ceil(max / step) * step;
+  const y = (v) => top + (H - top - bottom) * (1 - v / ceil);
+  const slot = (W - left) / runs.length, bw = Math.max(3, Math.min(28, slot - 2));
+  const ticks = [];
+  for (let v = 0; v <= ceil + 1; v += step) ticks.push(v);
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Credits per hour of play, last ${runs.length} sessions">
+    <g class="axis">${ticks.map((v) => `<line x1="${left}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/>
+      <text x="${left - 8}" y="${y(v) + 4}" text-anchor="end">${v ? `${(v / 1e6).toFixed(v < 1e6 ? 1 : 0)}M` : "0"}</text>`).join("")}</g>
+    ${runs.map((r, i) => { const x = left + i * slot + (slot - bw) / 2, h = Math.max(1, H - bottom - y(r.rate));
+      return `<g data-i="${i}"><path class="bar" d="M${x},${H - bottom} v${-(h - 3)} q0,-3 3,-3 h${bw - 6} q3,0 3,3 v${h - 3} z"/>
+        <rect class="hit" x="${left + i * slot}" y="${top}" width="${slot}" height="${H - top - bottom}"/></g>`; }).join("")}
+    <text class="axis" x="${left}" y="${H - 4}" fill="var(--label-3)" font-size="11">${dayLabel(runs[0].start)}</text>
+    <text class="axis" x="${W}" y="${H - 4}" fill="var(--label-3)" font-size="11" text-anchor="end">${dayLabel(runs[runs.length - 1].start)}</text>
+  </svg><div class="tip" hidden></div>`;
+  const tip = box.querySelector(".tip");
+  box.querySelectorAll("g[data-i]").forEach((g) => {
+    g.addEventListener("mouseenter", () => {
+      const r = runs[g.dataset.i], x = left + (Number(g.dataset.i) + .5) * slot;
+      g.classList.add("on");
+      tip.innerHTML = `<b>${cr(r.rate)} Cr an hour</b>${dayLabel(r.start)} · ${dur(r.hours)} · ${crM(r.earned)} Cr`;
+      tip.style.left = `${22 + x}px`; tip.style.top = `${6 + y(r.rate)}px`; tip.hidden = false;
+    });
+    g.addEventListener("mouseleave", () => { g.classList.remove("on"); tip.hidden = true; });
+  });
+}
+addEventListener("resize", () => { if (view === "stats") drawChart(); });
+
+function renderStats(h) {
+  const t = h.totals, st = h.stats || {};
+  const m = st.missions || {};
   const best = (s, what) => s ? `
     <div><dt>${what}<small>${esc(s.target_faction)} · ${esc(s.system)} · ${monthYear(s.start)}</small></dt>
       <dd>${what.includes("kill") ? `${cr(s.per_kill)} Cr` : `${colM(s.per_hour)} Cr/h`}</dd></div>` : "";
-  const lead = (rows, label, value) => rows.length ? rows.map((r) =>
-    `<div><dt>${esc(r[label])}<small>${value(r)[0]}</small></dt><dd>${value(r)[1]}</dd></div>`).join("") : "";
-
-  $("jside").innerHTML = `
+  const fav = (st.kills_by_faction || [])[0], ship = (st.kills_by_own_ship || [])[0];
+  $("sside").innerHTML = `
     <section class="hero">
       <p class="place">${icon("book")}Since ${monthYear(h.since)}</p>
       <p class="big">${crM(t.massacre_credits + t.bounties)}</p>
       <p class="cond">credits from massacre missions and bounties</p>
       <p class="sub">${cr(t.massacre_credits)} Cr in mission pay, ${cr(t.bounties)} Cr in bounties</p>
     </section>
-    <dl class="facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
-    ${lastState ? standingHTML(lastState.imperial, lastState.powerplay, lastState.combat) : ""}
+    ${factsHTML([
+      ["Kills", cr(t.kills)],
+      ["Hunting time", dur(t.hunting_hours)],
+      ["Sessions", cr(st.sessions_played || h.sessions.length)],
+      ["Usual pace", h.usual_pace ? `${h.usual_pace} kills/h` : "—"],
+      ["Stacks completed", cr(t.stacks)],
+      ["Merits earned", cr(t.merits)],
+      ["Combat bonds", t.bonds ? `${colM(t.bonds)} Cr` : "—"],
+      ["Crew wages", st.crew_total ? `${colM(st.crew_total)} Cr` : "—"],
+      ["Deaths", st.deaths != null ? cr(st.deaths) : "—"],
+      ["On-foot kills", st.on_foot_kills ? cr(st.on_foot_kills) : "—"],
+    ])}
+    <section class="block"><h2>Favourites</h2><dl class="kv">
+      ${fav ? `<div><dt>Target faction<small>${cr(fav.count)} kills · ${colM(fav.credits)} Cr in bounties</small></dt><dd>${esc(fav.name)}</dd></div>` : ""}
+      ${ship ? `<div><dt>Your ship<small>${cr(ship.count)} kills</small></dt><dd>${esc(ship.name)}</dd></div>` : ""}
+      ${(st.kills_by_system || [])[0] ? `<div><dt>Hunting ground<small>${cr(st.kills_by_system[0].count)} kills</small></dt><dd>${esc(st.kills_by_system[0].name)}</dd></div>` : ""}
+      ${st.biggest_bounty ? `<div><dt>Biggest bounty<small>${esc(st.biggest_bounty.ship)}, ${esc(st.biggest_bounty.faction)} · ${esc(st.biggest_bounty.system || "")}</small></dt><dd>${cr(st.biggest_bounty.credits)} Cr</dd></div>` : ""}
+    </dl></section>
     <section class="block"><h2>Best stacks</h2>
-      <dl class="kv">${best(h.best_per_kill, "Best all-in per kill")}${best(h.best_per_hour, "Best all-in per hour")}</dl></section>
-    <section class="block"><h2>Best places</h2>
-      <dl class="kv">${lead(h.top_systems, "system", (p) => [plural(p.stacks, "stack"), `${colM(p.income)} Cr`])}</dl></section>
-    <section class="block"><h2>Most-used providers</h2>
-      <dl class="kv">${lead(h.top_providers, "name", (p) => [`${colM(p.paid)} Cr paid`, plural(p.missions, "mission")])}</dl></section>`;
+      <dl class="kv">${best(h.best_per_kill, "Best all-in per kill")}${best(h.best_per_hour, "Best all-in per hour")}</dl></section>`;
 
   const none = '<span class="dim">—</span>';
   const stackRow = (s) => {
@@ -1213,53 +1406,104 @@ function renderJournal(h) {
       <span data-label="All-in / kill">${s.per_kill ? cr(s.per_kill) : none}</span>
       <span class="per-hour" data-label="All-in / hour">${s.per_hour ? colM(s.per_hour) : none}</span></li>`;
   };
-  const sessionRow = (s) => `<li>
-      <span class="name"><b>${new Date(s.start).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</b>
-        <small>${new Date(s.start).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}${
-          s.massacres ? ` · ${plural(s.massacres, "massacre")} handed in` : ""}${
-          s.bonds ? ` · ${colM(s.bonds)} in combat bonds` : ""}</small></span>
-      <span data-label="Length">${dur(s.hours)}</span>
-      <span data-label="Kills">${cr(s.kills)}</span>
-      <span data-label="Bounties">${s.bounties ? colM(s.bounties) : none}</span>
-      <span data-label="Mission pay">${s.paid ? colM(s.paid) : none}</span>
-      <span data-label="Merits">${s.merits ? cr(s.merits) : none}</span></li>`;
-
-  $("jmain").innerHTML = `
-    <article class="stack">
-      <header class="stack-head"><div class="stack-id"><h2>Every stack</h2>
-        <p class="stack-pay">Mission pay is what was actually paid in credits; missions taken for materials or reputation pay less. Bounties are every bounty earned in the system while the stack ran. All-in adds mission pay, bounties and any combat bonds.</p></div></header>
-      <div class="list-head"><span>Stack</span><span>Kills</span><span>Missions</span><span>Bounties</span><span>All-in / kill</span><span class="per-hour">All-in / hour</span></div>
-      <ol class="hist">${h.stacks.map(stackRow).join("")}</ol>
-    </article>
-    <article class="stack sess">
-      <header class="stack-head"><div class="stack-id"><h2>Hunting sessions</h2>
-        <p class="stack-pay">The last ${plural(h.sessions.length, "session")} with kills or massacre hand-ins.</p></div></header>
-      <div class="list-head"><span>Session</span><span>Length</span><span>Kills</span><span>Bounties</span><span>Mission pay</span><span>Merits</span></div>
-      <ol class="sess">${h.sessions.map(sessionRow).join("")}</ol>
-    </article>
-    <p class="foot">Built from every journal file since ${monthYear(h.since)}. Hunting time and session length count the gaps between events, with any pause over 10 minutes treated as a break — a game left open isn’t time played.</p>`;
+  $("smain").innerHTML =
+    card("Earnings", earningsChart(h.sessions), "Credits an hour of play in each of your recent sessions: bounties, combat bonds and mission pay. Hover a bar for the session.") +
+    `<div class="cards2">` +
+    card("Kills by target faction", barList(st.kills_by_faction, (r) => cr(r.count))) +
+    card("Kills by ship type", barList(st.kills_by_ship)) +
+    card("Hunting grounds", barList(st.kills_by_system)) +
+    card("Your ships", barList(st.kills_by_own_ship), "Kills made in each of your ships.") +
+    card("Massacre missions", `<div class="card-body">${factsHTML([
+      ["Taken", cr(m.accepted || 0)], ["Handed in", cr(m.completed || 0)],
+      ["Failed", cr(m.failed || 0)], ["Success rate", m.accepted ? `${Math.round(((m.completed || 0) / m.accepted) * 100)}%` : "—"],
+      ["All missions taken", cr(m.all_accepted || 0)], ["All handed in", cr(m.all_completed || 0)],
+    ])}</div>`) +
+    card("Crew", barList(st.crew_by_member, (r) => `${colM(r.credits)} Cr`), "What each NPC crew member has been paid.") +
+    `</div>` +
+    card("Every stack", `<div class="list-head"><span>Stack</span><span>Kills</span><span>Missions</span><span>Bounties</span><span>All-in / kill</span><span class="per-hour">All-in / hour</span></div>
+      <ol class="hist">${h.stacks.map(stackRow).join("")}</ol>`,
+      "Mission pay is what was actually paid in credits. Bounties are every bounty earned in the system while the stack ran. All-in adds mission pay, bounties and any combat bonds.");
+  drawChart();
 }
 
-async function loadJournal() {
+/* ---- History: every session, each with a page of its own */
+function renderHistory(h) {
+  const pick = sub && h.sessions.find((s) => s.start === sub);
+  if (!pick) {
+    $("hmain").innerHTML = card("Sessions", h.sessions.length ? `<ol class="sessions">${h.sessions.map((s) => `<li>
+        <a href="#history/${encodeURIComponent(s.start)}">
+          <span><b>${dayLabel(s.start)}</b><small>${ago(s.start)} · ${clock(s.start)}</small></span>
+          <span>${dur(s.hours)}</span><span>${plural(s.kills, "kill")}</span><span>${crM(sessionEarned(s))} Cr</span>
+          ${icon("chev", "i chev")}</a></li>`).join("")}</ol>` : '<p class="card-body dim">No sessions yet.</p>',
+      "Every session with kills or massacre hand-ins. Open one for its own statistics.");
+    return;
+  }
+  const s = pick, earned = sessionEarned(s);
+  const figures = [
+    ["Kills", cr(s.kills)], ["Per hour", s.hours >= 0.25 ? `${short(earned / s.hours)} Cr` : "—"],
+    ["Bounties", s.bounties ? short(s.bounties) : "—"], ["Mission pay", s.paid ? short(s.paid) : "—"],
+    ...(s.bonds ? [["Combat bonds", short(s.bonds)]] : []),
+    ["Merits", s.merits ? `+${cr(s.merits)}` : "—"], ["Crew share", s.crew ? short(s.crew) : "—"],
+    ["Missions taken", cr(s.accepted || 0)], ["Handed in", cr(s.massacres || 0)],
+    ...(s.deaths ? [["Deaths", cr(s.deaths)]] : []),
+  ];
+  $("hmain").innerHTML = `
+    <p><a class="back" href="#history">${icon("chev", "i")}All sessions</a></p>
+    <article class="stack">
+      <header class="stack-head"><div class="stack-id">
+        <h2>${new Date(s.start).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h2>
+        <p class="stack-meta"><span>${ago(s.start)}</span><span>${clock(s.start)}–${clock(s.end)}</span><span>${dur(s.hours)} of play</span></p>
+        <dl class="stats">${figures.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+      </div>
+      <div class="stack-num"><b>${crM(earned)}</b><span>credits earned</span></div></header>
+    </article>
+    <div class="cards2">
+      ${card("Kills by target faction", barList(s.by_faction))}
+      ${card("Kills by ship type", barList(s.by_ship))}
+      ${card("Systems", barList(s.by_system))}
+      ${card("Your ships", barList(s.flew))}
+    </div>
+    ${s.stacks && s.stacks.length ? card("Stacks worked", `<ol class="provider-list">${s.stacks.map((st) => `<li>
+      <span>${esc(st.target_faction)}<span class="states">${esc(st.system)}</span></span>
+      <span class="states">${plural(st.missions, "mission")}${st.in_progress ? " · in progress" : ""}</span></li>`).join("")}</ol>`) : ""}`;
+}
+
+async function loadHistory() {
   try {
     const res = await fetch("/api/history", { cache: "no-store" });
-    renderJournal(await res.json());
-  } catch (err) { /* the stacks view shows lost contact */ }
+    lastHistory = await res.json();
+    if (view === "stats") renderStats(lastHistory);
+    if (view === "history") renderHistory(lastHistory);
+  } catch (err) { /* the hunt page shows lost contact */ }
 }
 
-function setView(v) {
-  view = v;
+const VIEWS = { stacks: "stackView", commander: "commanderView", stats: "statsView", history: "historyView" };
+function setView(v, subpage = null, push = true) {
+  if (v === "journal") v = "history";
+  if (!VIEWS[v]) v = "stacks";
+  view = v; sub = subpage;
   document.querySelectorAll(".segmented button").forEach((b) =>
     b.setAttribute("aria-selected", String(b.dataset.view === v)));
-  $("stackView").hidden = v !== "stacks";
-  $("journalView").hidden = v !== "journal";
+  Object.entries(VIEWS).forEach(([k, id]) => { $(id).hidden = k !== v; });
   try { localStorage.setItem("view", v); } catch (err) { /* private mode */ }
-  history.replaceState(null, "", v === "journal" ? "#journal" : location.pathname);
-  if (v === "journal") loadJournal();
+  if (push) history.replaceState(null, "", v === "stacks" ? location.pathname
+    : `#${v === "stats" ? "statistics" : v}${subpage ? `/${encodeURIComponent(subpage)}` : ""}`);
+  if (v === "stats" || v === "history") {
+    if (lastHistory) (v === "stats" ? renderStats : renderHistory)(lastHistory);
+    loadHistory();
+  }
+  if (v === "commander" && lastState) renderCommander(lastState);
+  scrollTo(0, 0);
 }
+function route() {
+  const [page, ...rest] = location.hash.replace(/^#/, "").split("/");
+  const v = { "": "stacks", hunt: "stacks", commander: "commander", statistics: "stats", history: "history", journal: "history" }[page];
+  setView(v || "stacks", rest.length ? decodeURIComponent(rest.join("/")) : null, false);
+}
+addEventListener("hashchange", route);
 document.querySelectorAll(".segmented button").forEach((b) =>
   b.addEventListener("click", () => setView(b.dataset.view)));
-setInterval(() => { if (view === "journal") loadJournal(); }, 30000);
+setInterval(() => { if (view === "stats" || view === "history") loadHistory(); }, 30000);
 
 function setContact(ok) {
   if (ok === contact) return;
@@ -1428,10 +1672,13 @@ const probe = new Image();
 probe.onload = () => { $("emblem").innerHTML = '<img src="/emblem" alt="">'; };
 probe.src = "/emblem";
 
-let startView = location.hash === "#journal" ? "journal" : "stacks";
-try { if (!location.hash && localStorage.getItem("view") === "journal") startView = "journal"; } catch (err) { /* private mode */ }
 refresh().then(() => {
-  setView(startView);
+  if (location.hash) route();
+  else {
+    let saved = "stacks";
+    try { saved = localStorage.getItem("view") || "stacks"; } catch (err) { /* private mode */ }
+    setView(saved);
+  }
   const name = $("welcomeName");
   if (name && lastState && lastState.commander) {
     name.textContent = `CMDR ${lastState.commander}`;

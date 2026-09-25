@@ -75,6 +75,7 @@ def iso(dt):
 # --------------------------------------------------------------------------
 
 MISSION_CAP = 20
+SESSION_GAP = timedelta(minutes=30)   # a relog sooner than this continues the session
 
 IMPERIAL_RANKS = ["None", "Outsider", "Serf", "Master", "Squire", "Knight", "Lord",
                   "Baron", "Viscount", "Count", "Earl", "Marquis", "Duke", "Prince", "King"]
@@ -166,6 +167,34 @@ def style_info(slug, choice):
     return {"slug": slug, "choice": choice, "power": power, "small": small, "main": main,
             "name": f"{small} {main}", "accent": accent, "deep": deep, "ground": ground,
             "on_accent": on, "bounty": bounty}
+
+
+# Journal ship codes -> the names players know. Bounty events name most NPC
+# ships only by code; anything missing here is shown tidied up.
+SHIP_NAMES = {
+    "adder": "Adder", "anaconda": "Anaconda", "asp": "Asp Explorer", "asp_scout": "Asp Scout",
+    "belugaliner": "Beluga Liner", "cobramkiii": "Cobra Mk III", "cobramkiv": "Cobra Mk IV",
+    "cobramkv": "Cobra Mk V", "corsair": "Corsair", "cutter": "Imperial Cutter",
+    "diamondback": "Diamondback Scout", "diamondbackxl": "Diamondback Explorer",
+    "dolphin": "Dolphin", "eagle": "Eagle", "empire_courier": "Imperial Courier",
+    "empire_eagle": "Imperial Eagle", "empire_trader": "Imperial Clipper",
+    "federation_corvette": "Federal Corvette", "federation_dropship": "Federal Dropship",
+    "federation_dropship_mkii": "Federal Assault Ship", "federation_gunship": "Federal Gunship",
+    "ferdelance": "Fer-de-Lance", "hauler": "Hauler", "independant_trader": "Keelback",
+    "krait_light": "Krait Phantom", "krait_mkii": "Krait Mk II", "mamba": "Mamba",
+    "mandalay": "Mandalay", "orca": "Orca", "python": "Python", "python_nx": "Python Mk II",
+    "sidewinder": "Sidewinder", "smallcombat01_nx": "Kestrel Mk II", "type6": "Type-6 Transporter",
+    "type7": "Type-7 Transporter", "type8": "Type-8 Transporter", "type9": "Type-9 Heavy",
+    "type9_military": "Type-10 Defender", "typex": "Alliance Chieftain",
+    "typex_2": "Alliance Crusader", "typex_3": "Alliance Challenger", "viper": "Viper Mk III",
+    "viper_mkiv": "Viper Mk IV", "vulture": "Vulture", "explorer_nx": "Caspian Explorer",
+    "panthermkii": "Panther Clipper Mk II", "lakonminer": "Type-11 Prospector",
+}
+
+
+def ship_name(code, localised=None):
+    code = str(code or "").lower()
+    return SHIP_NAMES.get(code) or localised or code.replace("_", " ").title() or "Unknown"
 
 
 COMBAT_RANKS = ["Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master",
@@ -311,11 +340,13 @@ class Tracker:
         self.current_system = None
         self.commander = None
         self.last_event = None
+        self.left_at = None       # when you last left the game (menu, quit or crash)
 
         # Beyond the stack itself: what else the journal says about the hunt.
         self.bounties = []        # (timestamp, star_system, credits, "bounty" | "bond"), every kill paid
         self.paid = []            # (timestamp, credits): mission rewards actually paid out
         self.merits = []          # (timestamp, merits gained)
+        self.crew_wages = []      # (timestamp, crew member, credits): NPC crew's cut, paid at cash-in
         self.accepts = {}         # every MissionID accepted, any type -> timestamp (mission slots)
         self.system_pos = {}      # star system -> (x, y, z) in light years (hand-in route)
         self.system_power = {}    # star system -> (controlling power, powerplay state)
@@ -494,6 +525,10 @@ class Tracker:
         ts = parse_ts(ev.get("timestamp"))
         if name in FIGHT_BREAKS:
             self.fight += 1
+        if not self.left_at and (name == "Shutdown" or (name == "Music" and ev.get("MusicTrack") == "MainMenu")):
+            self.left_at = ts                             # back to the menu, or quitting (the first time)
+        elif name == "Fileheader" and not self.left_at:
+            self.left_at = self.last_event                # a crash: the last line before this file
         if ts:
             # Session time counts gaps between events, any gap over 10 minutes
             # as a break -- a game left open overnight isn't a 19-hour session.
@@ -518,15 +553,23 @@ class Tracker:
             for fa in ev.get("Factions") or []:
                 if fa.get("Name"):
                     self._rep_reading(fa["Name"], fa.get("MyReputation"))
-                    self.factions[fa["Name"]] = {"allegiance": fa.get("Allegiance"),
+                    self.factions[fa["Name"]] = {"states": [s.get("State") for s in fa.get("ActiveStates") or []
+                                                            if s.get("State")],
+                                                 "allegiance": fa.get("Allegiance"),
                                                  "rep": fa.get("MyReputation")}
 
         elif name == "LoadGame":
             self.commander = ev.get("Name") or self.commander
-            self.session_start, self.session_active = ts, 0.0
+            # A relog within half an hour is the same session (see SESSION_GAP).
+            if not (self.session_start and self.left_at and ts and ts - self.left_at < SESSION_GAP):
+                self.session_start, self.session_active = ts, 0.0
+            self.left_at = None
 
         elif name == "Powerplay":
             self.power = {"name": ev.get("Power"), "rank": ev.get("Rank"), "merits": ev.get("Merits")}
+
+        elif name == "NpcCrewPaidWage":
+            self.crew_wages.append((ts, ev.get("NpcCrewName") or "Crew", ev.get("Amount") or 0))
 
         elif name == "PowerplayMerits":
             self.merits.append((ts, ev.get("MeritsGained") or 0))
@@ -912,7 +955,15 @@ class Tracker:
         if logged is not None and marks:
             rep = max(-100.0, min(100.0, logged + marks * self.rep_per_mark()))
         return {"standing": standing(rep), "rep": rep, "logged_rep": logged,
-                "since_marks": marks, "allegiance": info.get("allegiance")}
+                "since_marks": marks, "allegiance": info.get("allegiance"),
+                "states": info.get("states") or []}
+
+    def providers_summary(self, missions):
+        """Every faction you hold missions from, and every one you're hunting."""
+        givers = sorted({m["giver"] for m in missions if m.get("giver")})
+        targets = sorted({m["target_faction"] for m in missions if m.get("target_faction")})
+        return {"givers": [dict(self.provider(g), name=g) for g in givers],
+                "targets": [dict(self.provider(f), name=f) for f in targets]}
 
     def bounty_bonus(self, system):
         """What cashing bounties in this system adds: (rate, power, state)."""
@@ -969,6 +1020,8 @@ class Tracker:
             "mission_credits": paid,
             "credits_per_hour": int((bounty_paid + bonds + paid) / hours),
             "merits": sum(m for ts, m in self.merits if ts and ts >= start),
+            "crew": sum(a for ts, _, a in self.crew_wages if ts and ts >= start),
+            "crew_names": sorted({n for ts, n, a in self.crew_wages if ts and ts >= start}),
         }
 
     def powerplay(self):
@@ -989,6 +1042,10 @@ class Tracker:
             "next_rank_at": powerplay_threshold(rank + 1) if known else None,
             "to_next": max(0, powerplay_threshold(rank + 1) - merits) if known else None,
             "session": sum(m for ts, m in self.merits if ts and start and ts >= start),
+            # At this session's merit rate.
+            "eta_hours": (round(max(0, powerplay_threshold(rank + 1) - merits) / (gained / hours), 2)
+                          if known and (gained := sum(m for ts, m in self.merits if ts and start and ts >= start))
+                          and (hours := self.session_active / 3600) >= 0.2 else None),
         }
 
     def imperial(self, missions):
@@ -1043,6 +1100,10 @@ class Tracker:
                               if per_pct and not top else None),
             "kills_per_pct": per_pct,
             "basis_kills": rate.get("kills"),
+            # At this session's kill rate (ship kills an hour of play).
+            "eta_hours": (round(max(0, (100 - progress) * per_pct - kills) / (kills / hours), 2)
+                          if per_pct and not top and kills >= 10
+                          and (hours := self.session_active / 3600) >= 0.2 else None),
         }
 
     def hand_in_route(self, ready):
@@ -1307,6 +1368,7 @@ class Tracker:
                 "imperial": self.imperial(live_missions),
                 "powerplay": self.powerplay(),
                 "combat": self.combat_rank(),
+                "providers": self.providers_summary(live_missions),
                 "style": self.style(),
                 "styles": [{"slug": k, "power": v[0], "name": f"{v[1]} {v[2]}"}
                            for k, v in STYLES.items()],
@@ -1352,7 +1414,8 @@ HISTORY_EVENTS = {b'"MissionAccepted"', b'"MissionCompleted"', b'"MissionFailed"
                   b'"MissionAbandoned"', b'"MissionRedirected"', b'"Bounty"',
                   b'"FactionKillBond"', b'"FSDJump"', b'"Location"', b'"CarrierJump"',
                   b'"LoadGame"', b'"PowerplayMerits"', b'"Rank"', b'"Progress"',
-                  b'"Promotion"'}
+                  b'"Promotion"', b'"NpcCrewPaidWage"', b'"Died"', b'"Loadout"',
+                  b'"Fileheader"', b'"Shutdown"', b'"Music"'}
 
 
 def fast_ts(raw):
@@ -1395,14 +1458,33 @@ def build_history(journal_dir):
     accepted, completed, failed, redirected, allegiance = {}, {}, {}, {}, {}
     segments, prev_progress, done_since = [], None, []   # Imperial rank measurements
     combat_rank, combat_prev, ship_kills, combat_segments = None, None, 0, []
+    detail, crew, deaths, flying = [], [], [], None    # for the statistics page
+    left_at = None
 
     for ts, e in iter_history(journal_dir):
         if ts is None:
             continue
         since = since or ts
-        if e is not None and e.get("event") == "LoadGame":
+        # A relog within half an hour (to refresh the mission boards, say) is
+        # the same session, not a new one: measured from when you left it --
+        # back to the main menu or quitting -- or, after a crash, from the
+        # last line before the next journal file.
+        kind = e.get("event") if e is not None else None
+        if kind in ("Shutdown", "Music") and session and not left_at and (
+                kind == "Shutdown" or e.get("MusicTrack") == "MainMenu"):
+            left_at = ts          # the first time you left; the menu at launch comes later
+        elif kind == "Fileheader" and session and not left_at:
+            left_at = session["end"]
+        if kind == "LoadGame" and session and left_at:
+            session["end"] = left_at
+        rejoined = kind == "LoadGame" and session and left_at and ts - left_at < SESSION_GAP
+        if kind == "LoadGame":
+            left_at = None
+        if kind == "LoadGame" and not rejoined:
             session = {"start": ts, "end": ts, "active": 0.0, "kills": 0, "bounties": 0,
-                       "bonds": 0, "bond_kills": 0, "paid": 0, "merits": 0, "massacres": 0}
+                       "bonds": 0, "bond_kills": 0, "paid": 0, "merits": 0, "massacres": 0,
+                       "crew": 0, "deaths": 0, "accepted": 0, "factions": {}, "ships": {},
+                       "systems": {}, "flew": {}}
             sessions.append(session)
         elif session:
             # Same rule as the live tracker: gaps over 10 minutes are breaks.
@@ -1422,10 +1504,26 @@ def build_history(journal_dir):
             credits = (e.get("TotalReward") if ev == "Bounty" else e.get("Reward")) or 0
             kills.append((ts, e.get("VictimFaction"), system, credits, kind))
             ship_kills += ship_kill(e)
+            victim = (ship_name(e.get("Target"), e.get("Target_Localised")) if ship_kill(e) and ev == "Bounty"
+                      else "Combat zone ship" if ev == "FactionKillBond" else "On foot")
+            detail.append((ts, e.get("VictimFaction") or "Unknown", victim, system, flying, credits))
             if session:
+                for key, value in (("factions", e.get("VictimFaction") or "Unknown"), ("ships", victim),
+                                   ("systems", system or "Unknown"), ("flew", flying or "Unknown")):
+                    session[key][value] = session[key].get(value, 0) + 1
                 session["kills"] += 1
                 session["bounties" if kind == "bounty" else "bonds"] += credits
                 session["bond_kills"] += kind == "bond"
+        elif ev == "NpcCrewPaidWage":
+            crew.append((ts, e.get("NpcCrewName") or "Crew", e.get("Amount") or 0))
+            if session:
+                session["crew"] += e.get("Amount") or 0
+        elif ev == "Died":
+            deaths.append(ts)
+            if session:
+                session["deaths"] += 1
+        elif ev == "Loadout":
+            flying = ship_name(e.get("Ship"))
         elif ev == "PowerplayMerits":
             gained = e.get("MeritsGained") or 0
             merits.append((ts, gained))
@@ -1433,6 +1531,8 @@ def build_history(journal_dir):
                 session["merits"] += gained
         elif ev == "MissionAccepted" and mid is not None:
             accepted[mid] = e
+            if session:
+                session["accepted"] += 1
         elif ev == "MissionCompleted" and mid is not None:
             completed[mid] = e
             done_since.append(mid)
@@ -1573,6 +1673,56 @@ def build_history(journal_dir):
     massacres_done = [c for c in completed.values()
                       if str(c.get("Name") or "").startswith(MASSACRE_PREFIX)]
     hunts = [s for s in sessions if s["kills"] or s["massacres"]]
+
+    def top(pairs, n=8):
+        return [{"name": k, "count": v} for k, v in sorted(pairs.items(), key=lambda kv: -kv[1])[:n]]
+
+    def tally(index):
+        out = {}
+        for d in detail:
+            out[d[index]] = out.get(d[index], 0) + 1
+        return out
+
+    faction_credits = {}
+    for d in detail:
+        faction_credits[d[1]] = faction_credits.get(d[1], 0) + d[5]
+    crew_by = {}
+    for _, name, amount in crew:
+        crew_by[name] = crew_by.get(name, 0) + amount
+    massacre_ids = {m for m, a in accepted.items() if str(a.get("Name") or "").startswith(MASSACRE_PREFIX)}
+    biggest = max(detail, key=lambda d: d[5], default=None)
+    stats = {
+        "kills_by_faction": [dict(x, credits=faction_credits.get(x["name"], 0)) for x in top(tally(1))],
+        "kills_by_ship": top({k: v for k, v in tally(2).items() if k != "On foot"}, 10),
+        "kills_by_system": top({k or "Unknown": v for k, v in tally(3).items()}),
+        "kills_by_own_ship": top({k: v for k, v in tally(4).items() if k}, 6),
+        "on_foot_kills": tally(2).get("On foot", 0),
+        "biggest_bounty": {"credits": biggest[5], "faction": biggest[1], "ship": biggest[2],
+                           "system": biggest[3], "at": iso(biggest[0])} if biggest and biggest[5] else None,
+        "missions": {"accepted": len(massacre_ids),
+                     "completed": sum(1 for m in massacre_ids if m in completed),
+                     "failed": sum(1 for m in massacre_ids if m in failed),
+                     "all_accepted": len(accepted), "all_completed": len(completed)},
+        "crew_total": sum(a for _, _, a in crew),
+        "crew_by_member": [{"name": k, "credits": v} for k, v in sorted(crew_by.items(), key=lambda kv: -kv[1])],
+        "deaths": len(deaths),
+        "sessions_played": len(hunts),
+    }
+
+    def session_row(s):
+        stacks_in = [st for st in stacks if st["start"] and st["end"]
+                     and st["start"] <= iso(s["end"]) and st["end"] >= iso(s["start"])]
+        return {
+            "start": iso(s["start"]), "end": iso(s["end"]), "hours": round(s["active"] / 3600, 2),
+            "kills": s["kills"], "bounties": s["bounties"], "bonds": s["bonds"],
+            "bond_kills": s["bond_kills"], "paid": s["paid"],
+            "merits": s["merits"], "massacres": s["massacres"],
+            "crew": s["crew"], "deaths": s["deaths"], "accepted": s["accepted"],
+            "by_faction": top(s["factions"], 6), "by_ship": top(s["ships"], 6),
+            "by_system": top(s["systems"], 6), "flew": top(s["flew"], 4),
+            "stacks": [{"target_faction": st["target_faction"], "system": st["system"],
+                        "missions": st["missions"], "in_progress": st["in_progress"]} for st in stacks_in],
+        }
     return {
         "generated": iso(utcnow()),
         "since": iso(since),
@@ -1592,12 +1742,8 @@ def build_history(journal_dir):
         "top_systems": sorted(places.values(), key=lambda p: -p["income"])[:5],
         "top_providers": sorted(providers.values(), key=lambda p: -p["missions"])[:5],
         "stacks": stacks,
-        "sessions": [{
-            "start": iso(s["start"]), "hours": round(s["active"] / 3600, 2),
-            "kills": s["kills"], "bounties": s["bounties"], "bonds": s["bonds"],
-            "bond_kills": s["bond_kills"], "paid": s["paid"],
-            "merits": s["merits"], "massacres": s["massacres"],
-        } for s in reversed(hunts[-30:]) if s["start"] and s["end"]],
+        "sessions": [session_row(s) for s in reversed(hunts[-60:]) if s["start"] and s["end"]],
+        "stats": stats,
         "usual_pace": usual_pace,
         "empire_rate": empire_rate,
         "combat_rate": combat_rate,

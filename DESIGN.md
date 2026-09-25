@@ -249,7 +249,7 @@ A near-monochrome plum-dark system with a single violet voice and three state co
 
 ## Layout
 
-A two-column desktop grid, max 1440px wide, padded 32px 28px 72px: a summary column of 300 to 360px and a fluid main column, 36px apart. The summary column is sticky under the toolbar (top 90px) and scrolls on its own when taller than the window; its blocks are 34px apart. The main column stacks the this-session ticker strip and the stack cards 22px apart, largest stack first. The Journal view uses the same grid with a static side column.
+A two-column desktop grid, max 1440px wide, padded 32px 28px 72px: a summary column of 300 to 360px and a fluid main column, 36px apart. The summary column is sticky under the toolbar (top 90px) and scrolls on its own when taller than the window; its blocks are 34px apart. The main column stacks the this-session ticker strip and the stack cards 22px apart, largest stack first. Commander and Statistics use the same grid with a static side column; History is one centred column (max 980px): a list of sessions, each a link to its own page. Lists of counts are bar lists (name, a thin 6px bar on one scale per list, the count) and the one chart is Statistics' earnings: a single series of thin bars in the accent, quiet gridlines, a tooltip per bar, no legend.
 
 Inside cards, content sits 22px from the edges (16px at 720px and below) and rows are separated by hairlines with 9 to 11px vertical padding. Desktop mission rows are a fixed five-column grid (range, left, reward, due, action) and stay one line tall; the hand-in station truncates rather than wraps.
 

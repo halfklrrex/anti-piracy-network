@@ -110,12 +110,32 @@ all four added together.
   so missions handed in since are added from their "+" marks, at the rate your
   own journal shows (about 4 points each).
 - **This session**: time, kills, bounties, mission pay, merits and credits an
-  hour.
+  hour, in a strip above the stacks.
 - **Mission slots** used, against the game's limit of 20.
 - **Ready to hand in**: finished missions grouped by station, in route order
   (nearest first, then nearest from each stop), with light years per leg.
 - **Hand-in station on every mission**, worked out from where you were docked when
-  you took it. Turn it off under **View** for a tighter list.
+  you took it. Turn it off under **Settings** for a tighter list.
+
+## Pages
+
+Four pages, across the top:
+
+- **Hunt**: the live stacks, everything above.
+- **Commander**: this session in full (credits earned, kills an hour, bounties,
+  bonds, mission pay, merits and your **crew share**, what your NPC fighter pilot
+  has been paid as you cashed in), a **Copy session summary** button for Discord
+  or a squadron log, your ranks, and every faction you hold missions from or
+  hunt, with standing and any state it's in (Boom, War, Famine...). A relog
+  within half an hour, to refresh the mission boards say, is the same session.
+- **Statistics**: everything the journal has seen: lifetime earnings, a chart of
+  credits an hour across your recent sessions, kills by target faction, ship
+  type, system and your own ship, favourites and your biggest bounty, massacre
+  missions taken, handed in and failed, crew wages, deaths, and every stack
+  you've run.
+- **History**: every session, newest first, each with its date and how long
+  ago. Open one for its own statistics: figures, kills by faction, ship and
+  system, the ships you flew and the stacks you worked.
 
 ### Ranks
 
@@ -124,26 +144,24 @@ all four added together.
   this session · about 525 kills to go"). The journal records combat progress
   only when you log in, so this session's share is estimated from how many ship
   kills each 1% has taken you at this rank before; hover the line for the rate.
+  Once you've made 10 kills this session, it adds how long that is at your
+  pace ("about 482 kills to go (8 h 45 m)").
 - **Imperial Navy rank**, e.g. Duke → Prince: how far along you are, and what
   handing in your current Imperial missions should add ("44% · +6.6% after
   hand-in"). The estimate is measured from your own journal, which records your
   rank progress at every log-in; hover the line to see the rate it found.
-- **Powerplay**: your rank and merits to the next one, plus merits this session.
+- **Powerplay**: your rank and merits to the next one, with how long that is at
+  this session's merit rate, plus merits this session.
   Rank thresholds (rank 6 at 23 000 merits, then every 8 000) were read off real
   rank-ups.
 
-### The Journal view
-
-**Journal** at the top (or <http://127.0.0.1:8765/#journal>) is the long view,
-built from every journal file you have: what massacre missions and bounties have
-earned since your first log, every stack you've run with its all-in pay per kill
-and per hour, your best stacks, places and providers, and your recent sessions.
-
-![Journal view](docs/journal.png)
+### Time played
 
 Hunting time counts the gaps between events, with any pause over 10 minutes
 treated as a break, so a stack spread over three evenings isn't credited with the
 nights in between.
+
+![Statistics](docs/statistics.png)
 
 ## How the kill count works
 

@@ -73,10 +73,13 @@ screen is traceable to a journal event.
   kills-per-percent at this rank), Imperial Navy rank with an estimate of what handing in
   current Imperial missions adds (measured from the commander's own history,
   about 0.30% per reputation "+" at Duke), and Powerplay rank with merits.
-- Journal view: lifetime mission pay and bounties, every stack and hunting
-  session, best stacks, places and providers, and finished missions that were
-  never handed in. Time played counts gaps between events, any over 10 minutes
-  treated as a break.
+- Four pages: Hunt (the live stacks), Commander (this session in full with crew
+  share and a copyable summary, ranks with time to the next at this session's
+  pace, mission providers and targets with standing and faction state),
+  Statistics (lifetime earnings, an earnings-per-hour chart, kills by faction,
+  ship type, system and own ship, favourites, missions, crew wages, deaths,
+  every stack) and History (every session as a link to its own statistics). A
+  relog within 30 minutes continues the session.
 - Toggles: hand-in station on every mission; count kills only in the target system.
 - Declined by the commander: a mission-board calculator, sounds, hunting-ground
   statistics, and a phone/LAN view.
