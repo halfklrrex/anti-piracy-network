@@ -2164,15 +2164,21 @@ def close_with_window(server, window):
     says goodbye and nothing asks for data again (a reload asks at once), or
     when the window's own browser process ends."""
     opened = time.time()
+    handed_off = False
     while True:
         time.sleep(1)
         now = time.time()
-        quiet = now - Handler.last_seen > 4
+        ended = window is not None and window.poll() is not None
+        # A process that ends within seconds of launch only handed the window
+        # to an Edge already running this profile; from then on its exit says
+        # nothing about the window, so only the page's goodbye counts.
+        if ended and now - opened < 15:
+            handed_off = True
         said_bye = Handler.bye_at and now - Handler.bye_at > 4 and Handler.last_seen < Handler.bye_at
-        # A process that ends within seconds only handed the window to a
-        # browser that was already running; that isn't the window closing.
-        closed = window is not None and window.poll() is not None and now - opened > 10
-        if said_bye or (closed and quiet):
+        # Edge slows a covered window (you're in the game) to about one
+        # request a minute, so silence only means "closed" well past that.
+        quiet = now - Handler.last_seen > 90
+        if said_bye or (ended and not handed_off and quiet):
             break
     server.shutdown()
 
