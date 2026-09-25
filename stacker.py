@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Her Imperial Majesty's Anti-Piracy Network: a massacre-stacking dashboard for Elite Dangerous.
+"""Anti-Piracy Network: a massacre-stacking dashboard for Elite Dangerous.
 
 Reads your Elite Dangerous journal, finds every active massacre mission, groups
 them by target faction, target type and system, and works out how many kills
@@ -38,10 +38,8 @@ APP_DIR = Path(sys.executable if FROZEN else __file__).resolve().parent
 # Where the files that ship with the app live (dashboard.html, fonts/, the
 # emblem). The packaged .exe unpacks them to a temporary folder at start.
 RES_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
-APP_NAME = "Her Imperial Majesty's Anti-Piracy Network"
-# Files keep the short name: the .exe, and the window's own browser profile
-# (renaming that would forget the window's size and place).
-APP_FILE = "Imperial Anti-Piracy Network"
+APP_NAME = "Anti-Piracy Network"
+APP_FILE = APP_NAME           # the .exe, and the window's own browser profile folder
 PROG = f'"{APP_FILE}.exe"' if FROZEN else "python stacker.py"
 DEFAULT_PORT = 8765
 MASSACRE_PREFIX = "Mission_Massacre"
@@ -110,6 +108,64 @@ def mission_kind(target_type):
         if f"FactionTag_{key};" in str(target_type or ""):
             return kind
     return None
+
+
+# Each Powerplay power's dress for the app: its name (a small line over the
+# main one in the toolbar), its emblem in styles/, and an accent in its colours.
+# Accents that would read as a state colour are shifted: the greens away from
+# "ready" green, Grom's orange away from warning amber. Where the accent is
+# gold or yellow, bounties boosted by a Powerplay bonus are marked with an
+# underline instead of gold text. Archon Delaine, a pirate, has no style.
+STYLES = {
+    "ald": ("A. Lavigny-Duval", "Her Imperial Majesty’s", "Anti-Piracy Network",
+            "#b890ff", "#7a4ddc", "#140e1f", "#ffffff", "gold"),
+    "aisling": ("Aisling Duval", "Her Highness’", "Anti-Piracy Network",
+                "#6cc6f2", "#1f7fb4", "#0b1620", "#ffffff", "gold"),
+    "torval": ("Zemina Torval", "Torval Mining Ltd’s", "Anti-Piracy Network",
+               "#88a8ff", "#3a61d4", "#0d1224", "#ffffff", "gold"),
+    "patreus": ("Denton Patreus", "Imperial Admiralty’s", "Anti-Piracy Network",
+                "#52d3c8", "#177f78", "#081a19", "#ffffff", "gold"),
+    "winters": ("Felicia Winters", "Federal Stellar", "Anti-Piracy Network",
+                "#f2c14e", "#b8871c", "#1a1408", "#0b0a0f", "underline"),
+    "archer": ("Jerome Archer", "Federal Security Service", "Anti-Piracy Network",
+               "#e27ce3", "#a13aa3", "#1b0d1c", "#ffffff", "gold"),
+    "mahon": ("Edmund Mahon", "Alliance Defence Force", "Anti-Piracy Network",
+              "#2ec6a2", "#127c66", "#081a15", "#ffffff", "gold"),
+    "kaine": ("Nakato Kaine", "Free Alliance", "Anti-Piracy Network",
+              "#c4de50", "#7f9b18", "#121a06", "#0b0a0f", "gold"),
+    "yongrui": ("Li Yong-Rui", "Sirius Corporation", "Anti-Piracy Network",
+                "#63dccb", "#168e80", "#07191a", "#ffffff", "gold"),
+    "antal": ("Pranav Antal", "Utopian", "Anti-Piracy Collective",
+              "#f0d84a", "#a99212", "#191707", "#0b0a0f", "underline"),
+    "grom": ("Yuri Grom", "EG Union", "Anti-Piracy Network",
+             "#ec8a55", "#b35020", "#1c0f09", "#ffffff", "gold"),
+    "interstellar": (None, "Interstellar", "Anti-Piracy Network",
+                     "#a9bdd6", "#4f627c", "#0d1219", "#ffffff", "gold"),
+}
+POWER_STYLE = {v[0]: k for k, v in STYLES.items() if v[0]}
+
+
+def load_config():
+    try:
+        return json.loads((APP_DIR / "config.json").read_text(encoding="utf-8")) or {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def save_config(**changes):
+    cfg = load_config()
+    cfg.update(changes)
+    try:
+        (APP_DIR / "config.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def style_info(slug, choice):
+    power, small, main, accent, deep, ground, on, bounty = STYLES[slug]
+    return {"slug": slug, "choice": choice, "power": power, "small": small, "main": main,
+            "name": f"{small} {main}", "accent": accent, "deep": deep, "ground": ground,
+            "on_accent": on, "bounty": bounty}
 
 
 COMBAT_RANKS = ["Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master",
@@ -957,6 +1013,13 @@ class Tracker:
             "basis_missions": rate.get("missions"),
         }
 
+    def style(self):
+        """The style in use: the one chosen in Settings, or with "auto" the one
+        for the power you're pledged to (Interstellar if none has a style)."""
+        choice = load_config().get("style") or "auto"
+        slug = choice if choice in STYLES else POWER_STYLE.get(self.power.get("name"), "interstellar")
+        return style_info(slug, choice if choice in STYLES else "auto")
+
     def combat_rank(self):
         """Combat rank, and how far the ship kills since the journal last
         recorded it (at log-in) should have moved it -- at the rate this
@@ -1244,6 +1307,9 @@ class Tracker:
                 "imperial": self.imperial(live_missions),
                 "powerplay": self.powerplay(),
                 "combat": self.combat_rank(),
+                "style": self.style(),
+                "styles": [{"slug": k, "power": v[0], "name": f"{v[1]} {v[2]}"}
+                           for k, v in STYLES.items()],
                 "target": self.target_summary(groups),
                 "legal": self.legal_summary(),
                 "route": self.hand_in_route(ready),
@@ -1698,6 +1764,21 @@ def verify(tracker):
 # Web server
 # --------------------------------------------------------------------------
 
+def dress(html, style):
+    """Put the style into the page before it's sent, so its first frame (and
+    the welcome card) already wears the right name, emblem and colours."""
+    def text(s):
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    colours = (f":root {{ --imperial: {style['accent']}; --imperial-deep: {style['deep']}; "
+               f"--ground-top: {style['ground']}; --on-accent: {style['on_accent']}; }}")
+    for token, value in (("%%STYLE_VARS%%", colours), ("%%NAME%%", text(style["name"])),
+                         ("%%SMALL%%", text(style["small"])), ("%%MAIN%%", text(style["main"])),
+                         ("%%POWER%%", text(style["power"] or style["name"])),
+                         ("%%SLUG%%", style["slug"]), ("%%BOUNTY%%", style["bounty"])):
+        html = html.replace(token, value)
+    return html
+
+
 class Server(ThreadingHTTPServer):
     # With SO_REUSEADDR set, Windows lets a second socket bind a port that is
     # already listening, so a second copy of the app would start silently
@@ -1736,6 +1817,13 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def _style_image(self, slug):
+        path = RES_DIR / "styles" / f"{slug}.png"
+        if slug in STYLES and path.is_file():
+            self._send(200, path.read_bytes(), "image/png")
+        else:
+            self._send(404, "no emblem", "text/plain; charset=utf-8")
+
     def do_POST(self):
         # The dashboard says goodbye as its window closes (or reloads).
         if urlparse(self.path).path == "/api/bye":
@@ -1753,24 +1841,27 @@ class Handler(BaseHTTPRequestHandler):
             if not page.is_file():
                 self._send(500, "dashboard.html is missing", "text/plain; charset=utf-8")
                 return
-            self._send(200, page.read_bytes(), "text/html; charset=utf-8")
+            self._send(200, dress(page.read_text(encoding="utf-8"), self.tracker.style()),
+                       "text/html; charset=utf-8")
 
         elif route == "/api/history":
             body = json.dumps(self.tracker.history_report())
             self._send(200, body, "application/json; charset=utf-8")
 
         elif route == "/emblem":
-            # Drop your own emblem image beside stacker.py (or the .exe) and
-            # the dashboard uses it in place of the one that ships.
+            # The style's emblem, unless you've put an emblem image of your
+            # own beside stacker.py (or the .exe).
             types = {".svg": "image/svg+xml", ".png": "image/png",
                      ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
-            for folder in dict.fromkeys((APP_DIR, RES_DIR)):
-                for suffix, ctype in types.items():
-                    path = folder / f"emblem{suffix}"
-                    if path.is_file():
-                        self._send(200, path.read_bytes(), ctype)
-                        return
-            self._send(404, "no emblem", "text/plain; charset=utf-8")
+            for suffix, ctype in types.items():
+                path = APP_DIR / f"emblem{suffix}"
+                if path.is_file():
+                    self._send(200, path.read_bytes(), ctype)
+                    return
+            self._style_image(self.tracker.style()["slug"])
+
+        elif route.startswith("/styles/") and route.endswith(".png"):
+            self._style_image(route[len("/styles/"):-len(".png")])
 
         elif route.startswith("/fonts/"):
             # The display typeface ships in fonts/ so the dashboard never
@@ -1815,7 +1906,11 @@ class Handler(BaseHTTPRequestHandler):
             params = parse_qs(parsed.query)
             if "require_system" in params:
                 self.tracker.require_system = params["require_system"][0] not in ("0", "false")
-            self._send(200, json.dumps({"require_system": self.tracker.require_system}),
+            if "style" in params:
+                choice = params["style"][0]
+                save_config(style=choice if choice in STYLES else "auto")
+            self._send(200, json.dumps({"require_system": self.tracker.require_system,
+                                        "style": self.tracker.style()}),
                        "application/json; charset=utf-8")
         else:
             self._send(404, "not found", "text/plain; charset=utf-8")
@@ -1902,7 +1997,11 @@ def open_window(url, tab=False):
         # ours, so we can tell when the window has been closed.
         base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
         profile = Path(base) / APP_FILE / "window"
+        old = Path(base) / "Imperial Anti-Piracy Network" / "window"    # before the rename
         try:
+            if old.is_dir() and not profile.exists():
+                profile.parent.mkdir(parents=True, exist_ok=True)
+                old.rename(profile)
             profile.mkdir(parents=True, exist_ok=True)
             return subprocess.Popen(
                 [browser, f"--app={url}", f"--user-data-dir={profile}", "--window-size=1440,900",

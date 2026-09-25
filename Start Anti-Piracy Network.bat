@@ -1,5 +1,5 @@
 @echo off
-title Imperial Anti-Piracy Network
+title Anti-Piracy Network
 cd /d "%~dp0"
 
 where python >nul 2>nul

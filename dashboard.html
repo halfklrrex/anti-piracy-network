@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Her Imperial Majesty’s Anti-Piracy Network</title>
+<title>%%NAME%%</title>
 <link rel="icon" href="/emblem">
 <style>
   /* Saira (SIL OFL, fonts/OFL.txt), served by stacker.py from fonts/ so the page
@@ -27,7 +27,8 @@
     --label-3: rgba(236, 232, 246, .52);
     --imperial: #b890ff;
     --imperial-deep: #7a4ddc;
-    --imperial-wash: rgba(184, 144, 255, .14);
+    --imperial-wash: color-mix(in srgb, var(--imperial) 14%, transparent);
+    --on-accent: #ffffff;
     --green: #34d15a;
     --green-deep: #1f7a36;
     --green-wash: rgba(52, 209, 90, .14);
@@ -51,7 +52,7 @@
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
-  ::selection { background: rgba(184, 144, 255, .38); color: #fff; }
+  ::selection { background: color-mix(in srgb, var(--imperial) 38%, transparent); color: #fff; }
   :focus-visible { outline: 2px solid var(--imperial); outline-offset: 2px; border-radius: 6px; }
   h1, h2, h3, p { margin: 0; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -97,7 +98,7 @@
   .btn:disabled { cursor: default; color: var(--label-2); background: rgba(255, 255, 255, .05); }
   .btn.busy .i { animation: spin .8s linear infinite; }
   .btn.small { height: 28px; padding: 0 12px; }
-  .btn.prime { background: var(--imperial-deep); color: #fff; }
+  .btn.prime { background: var(--imperial-deep); color: var(--on-accent); }
   .btn.prime:hover { background: var(--imperial-deep); filter: brightness(1.14); }
   .link {
     background: none; border: 0; padding: 4px 7px; border-radius: 6px;
@@ -118,6 +119,19 @@
     color: var(--label);
     box-shadow: 0 20px 50px -10px rgba(0, 0, 0, .6);
   }
+  #viewopts { width: 360px; }
+  .opt-head { padding: 10px 12px 6px; font-size: 12px; color: var(--label-2); }
+  .styles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 0 6px 8px; }
+  .style-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 4px 7px;
+    border: 1px solid transparent; border-radius: 10px; background: none; color: var(--label-2);
+    font: 500 11px/1.2 var(--sans); cursor: pointer; transition: background-color .15s;
+  }
+  .style-tile:hover { background: rgba(255, 255, 255, .06); color: var(--label); }
+  .style-tile[aria-checked="true"] { background: var(--imperial-wash); border-color: var(--imperial); color: var(--label); }
+  .style-tile img, .style-tile svg { width: 36px; height: 36px; object-fit: contain; }
+  .style-tile svg { fill: var(--label-2); color: var(--label-2); }
+  .style-tile:focus-visible { outline: 2px solid var(--imperial); outline-offset: 1px; }
   .opt { display: flex; gap: 14px; align-items: center; padding: 11px 12px; border-radius: 8px; cursor: pointer; }
   .opt + .opt { border-top: 1px solid var(--hairline); border-radius: 0 0 8px 8px; }
   .opt:hover { background: rgba(255, 255, 255, .04); }
@@ -219,6 +233,8 @@
   .stats dd { margin: 0; font-size: 15px; font-weight: 600; white-space: nowrap; }
   /* Bounties worth more for where they'll be cashed in (a Powerplay bonus). */
   .gold, .facts dd.gold { color: var(--gold); }
+  [data-bounty="underline"] .gold, [data-bounty="underline"] .facts dd.gold {
+    color: var(--label); text-decoration: underline 2px var(--gold); text-underline-offset: 4px; }
   .stack-num { text-align: right; flex: none; }
   .stack-num b { display: block; font: 300 50px/1 var(--display); letter-spacing: -.035em; }
   .stack-num b .plus { font-size: .52em; color: var(--amber); vertical-align: 18px; margin-left: 2px; }
@@ -261,7 +277,7 @@
     transition: clip-path .7s var(--ease-out);
   }
   .mission.capped .track .fill { background: var(--amber); }
-  .mission.queued .track .seg { background: repeating-linear-gradient(90deg, rgba(184, 144, 255, .38) 0 4px, transparent 4px 8px); }
+  .mission.queued .track .seg { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--imperial) 38%, transparent) 0 4px, transparent 4px 8px); }
   .mission.queued .range .lo { color: var(--label-3); font-weight: 400; }
   .m-where { margin: 5px 0 0 40px; display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12px; color: var(--label-3); }
   .m-where b { font-weight: 500; color: var(--label-2); }
@@ -342,7 +358,7 @@
   .rankbar p b { color: var(--label); font-weight: 600; }
   .track .pending {
     position: absolute; top: 0; bottom: 0; border-radius: 99px;
-    background: repeating-linear-gradient(90deg, rgba(184, 144, 255, .6) 0 4px, transparent 4px 8px);
+    background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--imperial) 60%, transparent) 0 4px, transparent 4px 8px);
   }
 
   /* standing with a mission provider: state, so it carries state colour */
@@ -391,6 +407,10 @@
     .side { position: static; max-height: none; overflow: visible; padding: 0; }
     .status .cmdr { display: none; }
   }
+  /* The longer style names need room: shed toolbar extras as the window narrows
+     (the system is in the hero; the welcome card greets you by name). */
+  @media (max-width: 1240px) and (min-width: 721px) { .status .place-now { display: none; } }
+  @media (max-width: 1100px) and (min-width: 721px) { .status .cmdr, .tools .label { display: none; } }
   @media (max-width: 1100px) {
     .list-head, .hist li { grid-template-columns: minmax(0, 1fr) 50px 84px 84px 84px; }
     .hist li > .per-hour, .list-head .per-hour { display: none; }
@@ -449,7 +469,7 @@
   .welcome-mark { position: relative; width: 120px; height: 120px; margin: 0 auto; display: grid; place-items: center; }
   .welcome-glow {
     position: absolute; inset: -18%; border-radius: 50%;
-    background: radial-gradient(circle, rgba(184, 144, 255, .42), rgba(122, 77, 220, .12) 45%, transparent 68%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--imperial) 42%, transparent), color-mix(in srgb, var(--imperial-deep) 12%, transparent) 45%, transparent 68%);
     animation: welcome-glow 1.6s .3s var(--ease-out) both;
   }
   .welcome-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -500,8 +520,9 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>
+<style>%%STYLE_VARS%%</style>
 </head>
-<body>
+<body data-style="%%SLUG%%" data-bounty="%%BOUNTY%%">
 <!--
   THESIS: A glance-and-go ledger for Imperial massacre stacking: one huge kill count, then each target's provider queues read as Weather-style range rows. Refuses the gaming-HUD dashboard of orange stat tiles and badge clutter.
   OWN-WORLD: Apple Stocks/Weather dark grammar, commissioned for Arissa Lavigny-Duval's pilots: violet-black ground, elevated plum-neutral surfaces, one imperial violet for progress, emblem and controls; system green/amber/red only for state; one face everywhere, Saira (squared, Eurostile-style lettering like Elite's own cockpit panels), with thin display numerals and tracked capitals for the wordmark; authored 1.75-stroke icons; hairline key-value grids.
@@ -522,6 +543,11 @@
     <path d="M27.2 29.2 7.6 18.6 6.2 23.2 26.6 34.2z"/>
     <path d="M27.2 35.6 11.8 28.6 11.2 33.2 26.6 39.6z"/>
     <path d="M28.6 47 35.4 47 39.4 58.6 32 54.6 24.6 58.6z"/>
+  </symbol>
+  <symbol id="i-mark" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="3.5"/>
+    <path d="M32 2v11M32 51v11M2 32h11M51 32h11" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M32 17 35.6 28.4 47 32 35.6 35.6 32 47 28.4 35.6 17 32 28.4 28.4z"/>
   </symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4.2h-4.2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
@@ -547,10 +573,10 @@
       </svg>
       <div class="welcome-emblem">
         <img src="/emblem" alt="" onerror="this.hidden = true; this.nextElementSibling.hidden = false">
-        <svg viewBox="0 0 64 64" hidden><use href="#i-eagle"/></svg>
+        <svg viewBox="0 0 64 64" hidden><use href="#i-mark"/></svg>
       </div>
     </div>
-    <p class="welcome-org"><span>Her Imperial Majesty’s</span> <span>Anti-Piracy Network</span></p>
+    <p class="welcome-org"><span>%%SMALL%%</span> <span>%%MAIN%%</span></p>
     <h2 class="welcome-title"><span>Welcome,</span> <span>Commander</span></h2>
     <p class="welcome-name" id="welcomeName"></p>
     <i class="welcome-rule"></i>
@@ -559,10 +585,10 @@
 
 <header class="toolbar">
   <div class="brand">
-    <div class="emblem" id="emblem" title="Arissa Lavigny-Duval">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#i-eagle"/></svg>
+    <div class="emblem" id="emblem" title="%%POWER%%">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#i-mark"/></svg>
     </div>
-    <div class="wordmark"><h1><small>Her Imperial Majesty’s</small>Anti-Piracy Network</h1></div>
+    <div class="wordmark"><h1><small>%%SMALL%%</small>%%MAIN%%</h1></div>
   </div>
   <div class="status">
     <span class="live" id="live"><i></i><span id="liveText">Live</span></span>
@@ -578,8 +604,8 @@
     <span class="slots" id="slots" title="Missions of every kind you're holding, against the game's limit of 20"></span>
   </div>
   <div class="tools">
-    <button class="btn" popovertarget="viewopts" type="button" aria-label="View options">
-      <svg class="i"><use href="#i-sliders"/></svg><span class="label">View</span>
+    <button class="btn" popovertarget="viewopts" type="button" aria-label="Settings">
+      <svg class="i"><use href="#i-sliders"/></svg><span class="label">Settings</span>
     </button>
     <button class="btn" id="refresh" type="button" aria-label="Refresh — re-read the journal now" title="Re-read the journal right now">
       <svg class="i" id="refreshIcon"><use href="#i-refresh"/></svg><span class="label" id="refreshText">Refresh</span>
@@ -588,6 +614,9 @@
 </header>
 
 <div id="viewopts" popover>
+  <p class="opt-head">Style</p>
+  <div class="styles" id="styleGrid" role="radiogroup" aria-label="Style"></div>
+  <p class="opt-head">View</p>
   <label class="opt">
     <div><strong>Hand-in station on every mission</strong>
       <small>Show which station each mission goes back to. Where the pirates are is on each stack.</small></div>
@@ -959,7 +988,7 @@ function stackCard(g, prev, solo, explained, target, slotsFree) {
     ["Rewards", short(g.reward), `${cr(g.reward)} Cr in mission rewards across ${plural(g.mission_count, "mission")}`],
     ["Per kill", short(g.cr_per_kill), `${cr(g.cr_per_kill)} Cr of mission pay a kill`],
     ["Bounties", short(g.bounties_paid ?? g.bounties ?? 0), `${cr(g.bounties || 0)} Cr in bounties here so far${g.bounty_kills ? `, from ${plural(g.bounty_kills, "kill")}` : ""}${
-      g.bonus_rate ? `; ${cr(g.bounties_paid)} Cr cashed in here, with ${esc(g.bonus_power)}’s +${Math.round(g.bonus_rate * 100)}% ${esc((g.bonus_state || "").toLowerCase())} bonus` : ""}`, g.bonus_rate ? "gold" : ""],
+      g.bonus_rate ? `; ${cr(g.bounties_paid)} Cr cashed in here, with ${esc(g.bonus_power)}’s +${Math.round(g.bonus_rate * 100)}% ${esc((g.bonus_state || "").toLowerCase())} bonus` : ""}`, g.bonus_rate && g.bounties ? "gold" : ""],
     ...(g.bonds ? [["Combat bonds", short(g.bonds), `${cr(g.bonds)} Cr in combat bonds here`]] : []),
   ];
 
@@ -1087,6 +1116,11 @@ const signature = (s) => JSON.stringify(s, (k, v) =>
 
 function apply(s) {
   lastState = s;
+  buildStyleGrid(s);
+  if (s.style && document.body.dataset.style && s.style.slug !== document.body.dataset.style) {
+    location.reload();
+    return;
+  }
   $("cmdr").textContent = s.commander || "—";
   $("sysNow").textContent = s.current_system || "—";
   $("sysmatch").checked = s.require_system;
@@ -1361,6 +1395,32 @@ document.addEventListener("keydown", (ev) => {
 // goodbye too, but asks for data again at once, so the app stays.
 addEventListener("pagehide", () => {
   try { navigator.sendBeacon("/api/bye"); } catch (err) { /* nothing to tell */ }
+});
+
+// Settings: pick a style, or Automatic (the power you're pledged to). The
+// choice is saved beside the app, and the page reloads wearing it.
+const STYLE_LABEL = { ald: "Arissa", aisling: "Aisling", torval: "Torval", patreus: "Patreus",
+  winters: "Winters", archer: "Archer", mahon: "Mahon", kaine: "Kaine", yongrui: "Yong-Rui",
+  antal: "Antal", grom: "Grom", interstellar: "Interstellar" };
+let styleGridBuilt = false;
+function buildStyleGrid(s) {
+  if (styleGridBuilt || !s.style || !s.styles) return;
+  styleGridBuilt = true;
+  const tile = (slug, label, img, tip) => `
+    <button type="button" class="style-tile" role="radio" data-style-pick="${slug}"
+            aria-checked="${s.style.choice === slug}" title="${esc(tip)}">
+      ${img ? `<img src="${img}" alt="" onerror="this.outerHTML='<svg viewBox=&quot;0 0 64 64&quot;><use href=&quot;#i-mark&quot;/></svg>'">`
+            : '<svg viewBox="0 0 64 64"><use href="#i-mark"/></svg>'}${esc(label)}</button>`;
+  const pledged = s.powerplay && s.powerplay.power;
+  $("styleGrid").innerHTML = tile("auto", "Automatic", s.style.choice === "auto" ? "/emblem" : null,
+      `Follows your Powerplay pledge${pledged ? ` (${pledged})` : ""}`) +
+    s.styles.map((st) => tile(st.slug, STYLE_LABEL[st.slug] || st.slug, `/styles/${st.slug}.png`, st.name)).join("");
+}
+document.addEventListener("click", async (ev) => {
+  const pick = ev.target.closest("[data-style-pick]");
+  if (!pick) return;
+  await fetch(`/api/config?style=${encodeURIComponent(pick.dataset.stylePick)}`);
+  location.reload();
 });
 
 // Use the pilot's own emblem if one sits beside stacker.py.

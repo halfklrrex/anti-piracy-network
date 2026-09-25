@@ -1,5 +1,5 @@
 ---
-name: Her Imperial Majesty's Anti-Piracy Network
+name: Anti-Piracy Network
 description: An Imperial pilot's glance-and-go ledger for stacked massacre missions, in Apple Stocks/Weather dark grammar.
 colors:
   ground-top: "#140e1f"
@@ -168,13 +168,15 @@ components:
     height: "6px"
 ---
 
-# Design System: Her Imperial Majesty's Anti-Piracy Network
+# Design System: Anti-Piracy Network
 
 Product truth, audience and brand commitments live in [PRODUCT.md](PRODUCT.md); this file is strictly visual. Everything below is recorded from the shipped `dashboard.html` (inline CSS on `:root`), not from the plan. Where the direction comment at the top of `<body>` and the build differ, the build is recorded.
 
 ## Overview
 
 **Creative North Star: "The Imperial Stocks App"**
+
+**Styles.** Everything below is recorded in the A. Lavigny-Duval style, the original. The app can wear any Powerplay power's style: the server writes its accent (`imperial`, `imperial-deep`), ground tint (`ground-top`) and `on-accent` text colour into the page, with its emblem and name, before the first frame. Accents that would read as state are moved off it: the greens (Mahon, Kaine, Yong-Rui) toward emerald and cyan, clear of ready-green; Grom's orange toward copper, clear of warning amber. Where the accent is gold or yellow (Winters, Antal), boosted bounties are marked with a gold underline instead of gold text. State colours never change with the style.
 
 Apple's Stocks and Weather, dark, issued to Arissa Lavigny-Duval's pilots. The page reads like a first-party utility: a violet-black ground, plum-neutral cards lifted a step above it, thin numerals at weather-app scale, hairline key-value grids, and one imperial violet that carries progress, the emblem and every control. Empire enters through the purple, the commander's own eagle emblem (user raster at `/emblem`; an original inline-SVG eagle only if that file is missing) and one typeface, Saira, whose squared letters echo the lettering on Elite's own cockpit panels. The type is in-universe; the chrome stays Apple's, and there is no sci-fi HUD chrome.
 
@@ -236,7 +238,7 @@ A near-monochrome plum-dark system with a single violet voice and three state co
 - **Sentence** (400, 13.5px, 1.45, max 78ch): state sentences under a stack head.
 - **Label** (13px): key-value grids, meta lines, buttons (500), table cells. Values are 600 in `label`, keys 400 in `label-2`.
 - **Caption** (12 to 12.5px, `label-3` or `label-2`): hand-in lines, footnotes, ticker keys, column heads.
-- **Wordmark** (500, 13.5px, .16em tracking, uppercase; .12em at 720px and below): "Anti-Piracy Network" in the toolbar, with "Her Imperial Majesty's" set above it as an eyebrow (600, 11px, .24em tracking, `label-3`; .19em at 720px and below), tracked so the two lines run the same width. The lockup stays narrow enough to share a phone-width toolbar row with the View and Refresh buttons.
+- **Wordmark** (500, 13.5px, .16em tracking, uppercase; .12em at 720px and below): "Anti-Piracy Network" in the toolbar, with the style's prefix ("Her Imperial Majesty's", "Federal Security Service"...) set above it as an eyebrow (600, 11px, .24em tracking, `label-3`; .19em at 720px and below), tracked so the two lines run the same width. The lockup stays narrow enough to share a phone-width toolbar row with the View and Refresh buttons.
 
 ### Named Rules
 **The Thin Numeral Rule.** Only the two kill counts are set at 300 weight and large; no other number competes with them. Every other figure is 13 to 15px at 600.

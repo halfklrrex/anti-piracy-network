@@ -1,12 +1,12 @@
-# Her Imperial Majesty's Anti-Piracy Network
+# Anti-Piracy Network
 
 A live dashboard for pirate-massacre stacking in **Elite Dangerous**. It reads
 your game journal while you play and shows how many kills your stack really
 needs, which mission each kill is feeding, what the stack pays, and where to hand
 in. It runs on your own PC, only reads the journal, and never goes online.
 
-Styled as an Imperial device for Arissa Lavigny-Duval's pilots; it works for any
-commander.
+It dresses as the network of whichever Powerplay power you fly for (see
+[Styles](#styles)); it works for any commander.
 
 ![Stacks view](docs/stacks.png)
 
@@ -14,10 +14,10 @@ commander.
 
 ## Download
 
-**Windows:** get `Imperial Anti-Piracy Network.exe` from the [Releases](../../releases) page
+**Windows:** get `Anti-Piracy Network.exe` from the [Releases](../../releases) page
 and double-click it. Nothing to install. It opens in a window of its own and
 updates about once a second while you play; each launch starts with a short
-welcome from Her Imperial Majesty's Anti-Piracy Network (click or press any key to skip
+welcome from your power's Anti-Piracy Network (click or press any key to skip
 it). **Close the window to quit.** Opening the .exe again while it's running just
 opens another window onto it.
 
@@ -36,7 +36,7 @@ Choose **More info → Run anyway**.
 python stacker.py
 ```
 
-or double-click `Start Imperial Anti-Piracy Network.bat` on Windows. It uses only Python's standard
+or double-click `Start Anti-Piracy Network.bat` on Windows. It uses only Python's standard
 library: there's nothing to `pip install`.
 
 Your journal folder is found automatically at
@@ -206,23 +206,47 @@ mission is 3 days past its deadline, its line turns amber.
 ## Options
 
 ```bash
-"Imperial Anti-Piracy Network.exe" --tab          # open as a browser tab, not a window
-"Imperial Anti-Piracy Network.exe" --no-browser   # open nothing; run until stopped
-"Imperial Anti-Piracy Network.exe" --console      # one-shot text summary, no window
-"Imperial Anti-Piracy Network.exe" --verify       # every past completion: logged vs. corrected
-"Imperial Anti-Piracy Network.exe" --port 8790    # a different port
-"Imperial Anti-Piracy Network.exe" --days 60      # scan further back (default 30)
-"Imperial Anti-Piracy Network.exe" --any-system   # count kills regardless of system
-"Imperial Anti-Piracy Network.exe" --journal-dir "D:\path\to\Elite Dangerous"
+"Anti-Piracy Network.exe" --tab          # open as a browser tab, not a window
+"Anti-Piracy Network.exe" --no-browser   # open nothing; run until stopped
+"Anti-Piracy Network.exe" --console      # one-shot text summary, no window
+"Anti-Piracy Network.exe" --verify       # every past completion: logged vs. corrected
+"Anti-Piracy Network.exe" --port 8790    # a different port
+"Anti-Piracy Network.exe" --days 60      # scan further back (default 30)
+"Anti-Piracy Network.exe" --any-system   # count kills regardless of system
+"Anti-Piracy Network.exe" --journal-dir "D:\path\to\Elite Dangerous"
 ```
 
 Run these from a terminal (Command Prompt or PowerShell); the text commands
 print there. From source, use `python stacker.py` in place of the .exe.
 
+## Styles
+
+Under **Settings**, the app can wear any Powerplay power's colours, emblem and
+name. **Automatic** (the default) follows your pledge from the journal; a
+commander with no pledge, or pledged to Archon Delaine (a pirate has no use for
+an Anti-Piracy Network), gets the Interstellar style.
+
+| Power | The app becomes |
+| --- | --- |
+| A. Lavigny-Duval | Her Imperial Majesty's Anti-Piracy Network |
+| Aisling Duval | Her Highness' Anti-Piracy Network |
+| Denton Patreus | Imperial Admiralty's Anti-Piracy Network |
+| Zemina Torval | Torval Mining Ltd's Anti-Piracy Network |
+| Felicia Winters | Federal Stellar Anti-Piracy Network |
+| Jerome Archer | Federal Security Service Anti-Piracy Network |
+| Edmund Mahon | Alliance Defence Force Anti-Piracy Network |
+| Nakato Kaine | Free Alliance Anti-Piracy Network |
+| Li Yong-Rui | Sirius Corporation Anti-Piracy Network |
+| Pranav Antal | Utopian Anti-Piracy Collective |
+| Yuri Grom | EG Union Anti-Piracy Network |
+| none | Interstellar Anti-Piracy Network |
+
 ## Make it yours
 
+- **Style**: pick one under **Settings**, or leave it on **Automatic** to wear the
+  style of the power you're pledged to (read from your journal).
 - **Emblem**: put an `emblem.png` (or `.svg`, `.webp`, `.jpg`) beside the .exe or
-  `stacker.py` and it replaces the one that ships. It's also the browser-tab icon.
+  `stacker.py` and it replaces the style's emblem. It's also the browser-tab icon.
 - **Typeface**: Saira, bundled in `fonts/` so the page never loads anything from
   the internet.
 
@@ -233,7 +257,7 @@ python -m pip install pyinstaller
 python build.py
 ```
 
-The result is `dist/Imperial Anti-Piracy Network.exe`, with the dashboard, font and emblem
+The result is `dist/Anti-Piracy Network.exe`, with the dashboard, font and every style's emblem
 inside it. Your own `config.json`, `offsets.json` (hand corrections) and emblem
 live beside the .exe.
 
@@ -244,9 +268,9 @@ live beside the .exe.
 | `stacker.py` | The app: reads the journal and serves the dashboard |
 | `dashboard.html` | The dashboard page |
 | `fonts/` | Saira, and its licence |
-| `emblem.png` | The Arissa Lavigny-Duval emblem |
+| `styles/` | Each power's emblem |
 | `build.py` | Builds the .exe |
-| `Start Imperial Anti-Piracy Network.bat` | Runs it from source on Windows |
+| `Start Anti-Piracy Network.bat` | Runs it from source on Windows |
 | `DESIGN.md`, `PRODUCT.md` | Design and product notes |
 
 ## Privacy
@@ -260,6 +284,6 @@ writes to them, and serves the dashboard to your own machine only
 - Code: [MIT](LICENSE).
 - [Saira](https://github.com/Omnibus-Type/Saira) by Omnibus-Type, under the SIL
   Open Font License 1.1 (`fonts/OFL.txt`).
-- Elite Dangerous, and the Arissa Lavigny-Duval insignia used as the emblem, are
+- Elite Dangerous, and the Powerplay insignia used as style emblems, are
   © Frontier Developments plc. This is an unofficial fan-made tool, not
   affiliated with or endorsed by Frontier.

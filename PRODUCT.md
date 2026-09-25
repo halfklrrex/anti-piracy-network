@@ -89,16 +89,18 @@ screen is traceable to a journal event.
 
 - Apple-grade product feel, specifically alongside Apple's **Stocks** and
   **Weather** apps (user's choice).
-- Presented as an in-universe Imperial device used by pilots of **Arissa
-  Lavigny-Duval**; her purple eagle is the emblem. The commander supplied it
-  (`emblem.png` beside `stacker.py`, transparent, origin embedded); it is the
-  toolbar mark and the browser-tab icon. An original eagle mark stands in only
-  if that file is removed.
+- Presented as an in-universe device of the commander's Powerplay power: one
+  style per power (emblem from `styles/`, accent in its colours, its own name),
+  chosen under Settings or, by default, Automatic from the pledge in the
+  journal. The commander flies for **Arissa Lavigny-Duval**, whose purple eagle
+  and violet are the original look. Archon Delaine has no style; unpledged
+  commanders get Interstellar.
 - Bounties are shown as accumulated income, never framed as "at risk".
-- The app is named "Her Imperial Majesty's Anti-Piracy Network" (the
-  commander's choice; it replaced "Imperial Anti-Piracy Network", which before
-  that replaced "Massacre Stack"). Files keep the short name ("Imperial
-  Anti-Piracy Network.exe"). Each launch opens with a short "Welcome,
+- The app is named "Anti-Piracy Network" (the commander's choice, after
+  "Massacre Stack", "Imperial Anti-Piracy Network" and "Her Imperial Majesty's
+  Anti-Piracy Network"); each style prefixes it ("Her Highness' Anti-Piracy
+  Network", "Utopian Anti-Piracy Collective"...). The exe is "Anti-Piracy
+  Network.exe", its icon the Interstellar mark. Each launch opens with a short "Welcome,
   Commander" card around the Arissa Lavigny-Duval emblem.
 - One typeface everywhere, Saira (the commander's pick over Space Grotesk, Outfit
   and Sora; serif faces were rejected as too fussy at small sizes). Bundled, never

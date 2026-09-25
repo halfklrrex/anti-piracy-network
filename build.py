@@ -1,11 +1,11 @@
-"""Build "Imperial Anti-Piracy Network.exe": one file that runs without Python.
+"""Build "Anti-Piracy Network.exe": one file that runs without Python.
 
     python -m pip install pyinstaller
     python build.py
 
-The .exe lands in dist/. It carries dashboard.html, the Saira font and the
-emblem inside it; a config.json, offsets.json or emblem of your own goes
-beside the .exe and takes precedence.
+The .exe lands in dist/. It carries dashboard.html, the Saira font and every
+style's emblem inside it; a config.json, offsets.json or emblem of your own
+goes beside the .exe. Its icon is the Interstellar (no-style) emblem.
 """
 import glob
 import os
@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-NAME = "Imperial Anti-Piracy Network"
+NAME = "Anti-Piracy Network"
 
 
 def png_to_ico(png, ico):
@@ -39,7 +39,8 @@ def main():
     # may be a synced folder that would upload every intermediate file).
     work = Path(tempfile.mkdtemp(prefix="iapn-build-"))
     icon = work / "emblem.ico"
-    png_to_ico(HERE / "emblem.png", icon)
+    mark = HERE / "styles" / "interstellar.png"
+    png_to_ico(mark if mark.is_file() else HERE / "styles" / "ald.png", icon)
     subprocess.run([
         sys.executable, "-m", "PyInstaller",
         "--onefile", "--windowed", "--noconfirm", "--clean",
@@ -49,7 +50,7 @@ def main():
         "--workpath", str(work / "build"),
         "--specpath", str(work),
         *data(HERE / "dashboard.html", "."),
-        *data(HERE / "emblem.png", "."),
+        *[arg for png in sorted((HERE / "styles").glob("*.png")) for arg in data(png, "styles")],
         # File by file: an escaped folder pattern nests as fonts/fonts/.
         *data(HERE / "fonts" / "saira.woff2", "fonts"),
         *data(HERE / "fonts" / "OFL.txt", "fonts"),
