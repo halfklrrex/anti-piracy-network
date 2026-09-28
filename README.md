@@ -8,10 +8,6 @@ in. It runs on your own PC, only reads the journal, and never goes online.
 It dresses as the network of whichever Powerplay power you fly for (see
 [Styles](#styles)); it works for any commander.
 
-![Stacks view](docs/stacks.png)
-
-![The welcome card](docs/welcome.png)
-
 ## Download
 
 Windows builds are on the [Releases](../../releases) page: download
