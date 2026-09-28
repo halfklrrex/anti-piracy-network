@@ -14,10 +14,9 @@ It dresses as the network of whichever Powerplay power you fly for (see
 
 ## Download
 
-### [⬇ Download Anti-Piracy Network for Windows](https://github.com/halfklrrex/imperial-pirate-stacker/releases/latest/download/Anti-Piracy-Network.exe)
-
-Double-click the downloaded file. Nothing to install. (Older versions and
-release notes are on the [Releases](../../releases) page.) It opens in a window of
+Windows builds are on the [Releases](../../releases) page: download
+`Anti-Piracy-Network.exe` from the latest release and double-click it. Nothing to
+install. (Older versions and release notes are there too.) It opens in a window of
 its own and updates about once a second while you play; each launch starts with a short
 welcome from your power's Anti-Piracy Network (click or press any key to skip
 it). **Close the window to quit.** Opening the .exe again while it's running just
