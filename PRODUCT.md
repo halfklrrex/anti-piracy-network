@@ -114,22 +114,24 @@ screen is traceable to a journal event.
   in AppData, are moved there on first start. Only a `journal_dir` override stays
   beside the app. The window's Edge profile stays in `%LOCALAPPDATA%` (about 1 GB,
   a full browser profile: not for a folder OneDrive or backups may sync).
-- Mini window: a native window (`miniwin.py`, tkinter, Python's own) at the
-  top-left of the screen showing only the rounded info panel: everything around
-  it is a see-through colour, so the game shows (the commander's ask: "just the
-  info box and nothing else"). An Edge window was tried first and dropped: Edge
-  draws with DirectComposition, which window regions don't clip, so its white
-  frame always showed. Kills to go, stack progress (along the pace-setting
-  queue, finished missions included), target check and wanted alert by default;
-  next payout (and how many missions are counting kills), credits an hour and
-  missions left in the stack (grouped as History groups stacks; "Missions
-  complete" in green at the end) on request. Drawn in Saira from
-  `fonts/saira.ttf`, loaded privately (Windows can't read WOFF2). Always on top,
-  click-through, out of the taskbar and Alt-Tab, never takes focus; size and
-  opacity are settings. Off by default. It needs the game in Borderless or
-  Windowed mode (exclusive fullscreen can't be overlaid), which Settings detects
-  from `DisplaySettings.xml`. It reads the tracker directly, so it has no bearing
-  on when the app quits, and it closes with the app.
+- Mini window: a native window (`miniwin.py`, tkinter, Python's own) in a corner
+  of the screen (top-left by default; any of the four under Settings) showing
+  only the rounded info panel: everything around it is a see-through colour, so
+  the game shows (the commander's ask: "just the info box and nothing else"). An
+  Edge window was tried first and dropped: Edge draws with DirectComposition,
+  which window regions don't clip, so its white frame always showed. Kills to
+  go, stack progress (along the pace-setting queue, finished missions included),
+  target check and wanted alert by default; next payout (and how many missions
+  are counting kills), credits an hour and missions left in the stack (grouped
+  as History groups stacks; "Missions complete" in green at the end) on request.
+  Drawn in Saira from `fonts/saira.ttf`, loaded privately (Windows can't read
+  WOFF2). Always on top, click-through, out of the taskbar and Alt-Tab, never
+  takes focus; size, corner and opacity are settings. It keeps 12px in from the
+  screen's work area, clear of the taskbar; in a bottom corner it grows upwards.
+  Off by default. It needs the game in Borderless or Windowed mode (exclusive
+  fullscreen can't be overlaid), which Settings detects from
+  `DisplaySettings.xml`. It reads the tracker directly, so it has no bearing on
+  when the app quits, and it closes with the app.
 - Stack report cards: every stack has its own page under Statistics (givers,
   ships killed and flown, materials, bounty merits) with a 1600×900 PNG export
   sharing the session card's drawing (`drawCard`). Finished stacks link to it

@@ -151,12 +151,13 @@ all four added together.
 
 ## Mini window
 
-A small panel at the top-left of your screen, above the game, so you can read
+A small panel in a corner of your screen, above the game, so you can read
 the stack without alt-tabbing: kills to go, the stack's progress, the target
 check and any wanted alert, and if you like the next payout (with how many
 missions are counting kills right now), credits an hour and missions left in
 the stack (17/17 counting down to "Missions complete"). Switch it on, and
-choose what it shows, its size and its opacity, under **Settings**. Clicks go straight through it to the game (you
+choose what it shows, its size, which corner it sits in (top-left unless you
+pick another) and its opacity, under **Settings**. Clicks go straight through it to the game (you
 can turn that off), it stays out of the taskbar and Alt-Tab, and it opens and
 closes with the app.
 
