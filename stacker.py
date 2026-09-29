@@ -272,7 +272,7 @@ def recon_prefs(changes=None):
 # over a game in exclusive fullscreen it can't show at all.
 MINI_FIELDS = ("kills", "progress", "payout", "target", "wanted", "session", "slots")
 MINI_DEFAULTS = {"on": False, "fields": ["kills", "progress", "target", "wanted"], "size": "m",
-                 "opacity": 90, "click_through": True}
+                 "opacity": 90, "click_through": True, "corner": "top-left"}
 
 
 def mini_prefs(changes=None):
@@ -291,6 +291,8 @@ def mini_prefs(changes=None):
             prefs["opacity"] = max(60, min(100, int(value)))
         elif key == "mini_click":
             prefs["click_through"] = value not in ("0", "false")
+        elif key == "mini_corner" and value in miniwin.CORNERS:
+            prefs["corner"] = value
     if changes:
         save_config(mini=prefs)
     return prefs
@@ -2747,7 +2749,8 @@ class Handler(BaseHTTPRequestHandler):
             mini_changes = {k: v[0] for k, v in params.items() if k.startswith("mini")}
             mini = mini_prefs(mini_changes)
             if mini_changes and self.mini:
-                self.mini.configure(mini["on"], mini["size"], mini["opacity"], mini["click_through"])
+                self.mini.configure(mini["on"], mini["size"], mini["opacity"], mini["click_through"],
+                                    mini["corner"])
             if "require_system" in params:
                 self.tracker.require_system = params["require_system"][0] not in ("0", "false")
             if "style" in params:
@@ -2991,7 +2994,8 @@ def run():
         prefs = mini_prefs()
         Handler.mini = miniwin.MiniWindow(lambda: tracker.mini_report(mini_prefs()),
                                           RES_DIR / "fonts" / "saira.ttf")
-        Handler.mini.configure(prefs["on"], prefs["size"], prefs["opacity"], prefs["click_through"])
+        Handler.mini.configure(prefs["on"], prefs["size"], prefs["opacity"], prefs["click_through"],
+                               prefs["corner"])
     # The server answers from a thread of its own: the app's window needs the
     # main one. Whichever way the app ends, it's shut down in one place below.
     serving = threading.Thread(target=server.serve_forever, daemon=True)

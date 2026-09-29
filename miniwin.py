@@ -1,5 +1,6 @@
-"""The mini window: a small panel at the top-left of the screen, above the
-game, showing only what you choose from your stacks.
+"""The mini window: a small panel in a corner of the screen (the top-left
+unless you choose another), above the game, showing only what you choose from
+your stacks.
 
 It's a native window of the app's own (tkinter, which comes with Python), not
 a browser window. Windows can make one colour of an ordinary window fully
@@ -24,7 +25,8 @@ from pathlib import Path
 SUPPORTED = os.name == "nt"
 WIDTHS = {"s": 240, "m": 300, "l": 380}    # at 100% display scaling
 SCALES = {"s": .82, "m": 1.0, "l": 1.24}   # the size setting scales type and spacing too
-MARGIN = 12                                # from the top-left corner of the screen
+CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
+MARGIN = 12                                # in from the screen's edges at its corner
 RADIUS = 10                                # the panel's rounded corners
 KEY = "#010203"                            # the see-through colour: drawn nowhere else
 
@@ -71,6 +73,16 @@ def game_display_mode():
     return {"0": "windowed", "1": "fullscreen", "2": "borderless"}.get(found.group(1)) if found else None
 
 
+def place(corner, area, w, h, margin):
+    """Where a w by h panel goes in `corner` of `area` (left, top, right,
+    bottom), `margin` in from both edges. At the bottom it grows upwards, so
+    its lower edge stays put as lines come and go."""
+    left, top, right, bottom = area
+    x = right - margin - w if corner.endswith("right") else left + margin
+    y = bottom - margin - h if corner.startswith("bottom") else top + margin
+    return x, y
+
+
 def mix(a, b, t):
     """Colour a laid over colour b at opacity t, both as #rrggbb."""
     ca = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
@@ -100,8 +112,9 @@ class MiniWindow:
     def __init__(self, report, font_file=None, at=None):
         self.report = report                  # () -> Tracker.mini_report(...) with the saved choices
         self.font_file = Path(font_file) if font_file else None
-        self.at = at                          # (x, y) instead of the top-left corner (for testing)
+        self.at = at                          # (x, y) instead of a corner (for testing)
         self.on, self.size, self.opacity, self.click_through = False, "m", 90, True
+        self.corner = "top-left"
         self.changed = True
         self.lock = threading.Lock()
         self.stopped = False
@@ -110,12 +123,13 @@ class MiniWindow:
             self.thread = threading.Thread(target=self._run, daemon=True)
             self.thread.start()
 
-    def configure(self, on, size="m", opacity=90, click_through=True):
+    def configure(self, on, size="m", opacity=90, click_through=True, corner="top-left"):
         with self.lock:
             self.on = bool(on)
             self.size = size if size in WIDTHS else "m"
             self.opacity = max(60, min(100, int(opacity)))
             self.click_through = bool(click_through)
+            self.corner = corner if corner in CORNERS else "top-left"
             self.changed = True
 
     def close(self):
@@ -169,6 +183,7 @@ class MiniWindow:
             return
         with self.lock:
             on, size, opacity, through, changed = self.on, self.size, self.opacity, self.click_through, self.changed
+            corner = self.corner
             self.changed = False
         try:
             if not on:
@@ -181,10 +196,12 @@ class MiniWindow:
                 if self.at:
                     x, y = self.at
                 else:
+                    # The main screen's work area: clear of the taskbar, wherever it sits.
                     info = MONITORINFO(cbSize=ctypes.sizeof(MONITORINFO))
                     user32.GetMonitorInfoW(user32.MonitorFromPoint(wt.POINT(0, 0), 1), ctypes.byref(info))
-                    x = info.rcWork.left + round(MARGIN * scale)
-                    y = info.rcWork.top + round(MARGIN * scale)
+                    work = info.rcWork
+                    x, y = place(corner, (work.left, work.top, work.right, work.bottom), w, h,
+                                 round(MARGIN * scale))
                 root.geometry(f"{w}x{h}+{x}+{y}")
                 if not self.shown:
                     self._style(opacity, through)      # before it shows, so it never takes focus

@@ -534,6 +534,8 @@
   .checks input { width: 16px; height: 16px; margin: 0; accent-color: var(--imperial-deep); }
   .card-seg { display: flex; margin: 0 22px 12px; max-width: 360px; }
   .card-seg button { flex: 1; }
+  /* The corner picker is laid out like the screen: top corners above bottom ones. */
+  .corner-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
   .range-row { display: flex; padding: 0 22px 12px; max-width: 404px; }
   .range-row input { flex: 1; accent-color: var(--imperial-deep); }
   #miniNote.warn { color: var(--amber); }
@@ -902,7 +904,7 @@
     </article>
     <article class="stack" id="miniCard">
       <header class="stack-head"><div class="stack-id"><h2>Mini window</h2>
-        <p class="stack-pay">A small panel at the top-left of your screen, above the game, so you can read the stack without alt-tabbing. Clicks go straight through it to the game.</p></div></header>
+        <p class="stack-pay">A small panel in a corner of your screen, above the game, so you can read the stack without alt-tabbing. Clicks go straight through it to the game.</p></div></header>
       <label class="opt">
         <div><strong>Show the mini window</strong><small id="miniNote">Opens with the app, and closes with it.</small></div>
         <input type="checkbox" class="switch" id="miniOn" role="switch">
@@ -914,6 +916,13 @@
         <button type="button" role="radio" data-value="s">Small</button>
         <button type="button" role="radio" data-value="m">Medium</button>
         <button type="button" role="radio" data-value="l">Large</button>
+      </div>
+      <p class="opt-head">Corner</p>
+      <div class="segmented card-seg corner-seg" role="radiogroup" aria-label="Mini window corner" data-mini="corner">
+        <button type="button" role="radio" data-value="top-left">Top left</button>
+        <button type="button" role="radio" data-value="top-right">Top right</button>
+        <button type="button" role="radio" data-value="bottom-left">Bottom left</button>
+        <button type="button" role="radio" data-value="bottom-right">Bottom right</button>
       </div>
       <p class="opt-head">Opacity <span id="miniOpacityVal"></span></p>
       <div class="range-row"><input type="range" id="miniOpacity" min="60" max="100" step="5" aria-label="Mini window opacity"></div>
@@ -2341,14 +2350,15 @@ async function openSettings() {
 // (and applied to the open window) at once.
 const MINI_LABELS = { kills: "Kills to go", progress: "Stack progress", payout: "Next payout",
   target: "Target check", wanted: "Wanted or fine", session: "Credits an hour", slots: "Missions left" };
+const MINI_CHOICES = { size: "m", corner: "top-left" };    // each radio group's default
 function renderMiniCard(cfg) {
   const m = cfg.mini || {};
   $("miniOn").checked = !!m.on;
   $("miniClick").checked = m.click_through !== false;
   $("miniOpacity").value = m.opacity || 90;
   $("miniOpacityVal").textContent = `${m.opacity || 90}%`;
-  document.querySelectorAll("[data-mini] button").forEach((b) =>
-    b.setAttribute("aria-checked", String(b.dataset.value === (m.size || "m"))));
+  document.querySelectorAll("[data-mini]").forEach((seg) => seg.querySelectorAll("button").forEach((b) =>
+    b.setAttribute("aria-checked", String(b.dataset.value === (m[seg.dataset.mini] || MINI_CHOICES[seg.dataset.mini])))));
   $("miniFields").innerHTML = (cfg.mini_fields || []).map((f) => `<label>
     <input type="checkbox" value="${f}"${(m.fields || []).includes(f) ? " checked" : ""}>${MINI_LABELS[f] || f}</label>`).join("");
   const note = $("miniNote");
@@ -2367,10 +2377,12 @@ $("miniOpacity").addEventListener("input", (ev) => { $("miniOpacityVal").textCon
 $("miniOpacity").addEventListener("change", (ev) => saveMini("mini_opacity", ev.target.value));
 $("miniFields").addEventListener("change", () => saveMini("mini_fields",
   [...$("miniFields").querySelectorAll("input:checked")].map((i) => i.value).join(",")));
-document.querySelectorAll("[data-mini] button").forEach((b) => b.addEventListener("click", () => {
-  document.querySelectorAll("[data-mini] button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
-  saveMini("mini_size", b.dataset.value);
-}));
+// Size and corner: each group's own buttons, saved as mini_size or mini_corner.
+document.querySelectorAll("[data-mini]").forEach((seg) => seg.querySelectorAll("button").forEach((b) =>
+  b.addEventListener("click", () => {
+    seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    saveMini(`mini_${seg.dataset.mini}`, b.dataset.value);
+  })));
 
 $("settingsBtn").addEventListener("click", () => setView(view === "settings" ? backTo : "settings"));
 $("settingsBack").addEventListener("click", (ev) => { ev.preventDefault(); setView(backTo); });
