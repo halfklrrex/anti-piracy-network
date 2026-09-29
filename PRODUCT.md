@@ -130,7 +130,10 @@ screen is traceable to a journal event.
   stack (grouped as History groups stacks; "Missions complete" in green at the
   end) on request. Drawn in Saira from `fonts/saira.ttf`, loaded privately
   (Windows can't read WOFF2). Always on top, click-through, out of the taskbar
-  and Alt-Tab, never takes focus; size, corner and opacity are settings. It
+  and Alt-Tab, never takes the focus from the game or the dashboard (Tk
+  activates a window as it makes it, so the app makes it at start-up, before
+  the dashboard's window; showing and hiding it later activates nothing); size,
+  corner and opacity are settings. It
   keeps 12px in from the screen's work area, clear of the taskbar; in a bottom
   corner it grows upwards. Off by default. It needs the game in Borderless or
   Windowed mode (exclusive fullscreen can't be overlaid), which Settings detects

@@ -3002,6 +3002,10 @@ def run():
     print("  Close its window to stop (or press Ctrl+C here).")
     print()
     if not args.no_browser and miniwin.SUPPORTED:
+        # Made here, before the dashboard's window: making its window (hidden
+        # until it's switched on) makes it the active one, which now is just
+        # the app starting. Made once the dashboard is up, it would take the
+        # focus from it; shown or hidden later, it takes nobody's.
         prefs = mini_prefs()
         Handler.mini = miniwin.MiniWindow(lambda: tracker.mini_report(mini_prefs()),
                                           RES_DIR / "fonts" / "saira.ttf")
