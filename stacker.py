@@ -32,6 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
+import appwindow
 import materials
 import miniwin
 import recon
@@ -1232,13 +1233,42 @@ class Tracker:
 
     # -- the mini window -----------------------------------------------------
 
+    def stack_missions(self, faction, system):
+        """(done, total) for the stack you're on against `faction` in `system`,
+        grouped as History groups stacks: a mission taken within 12 hours of
+        the previous one finishing belongs to the same stack. Done means the
+        game has said the kills are in (whether or not it's handed in yet);
+        failed or abandoned missions, and ones that ran out, don't count."""
+        now, runs = utcnow(), []
+        for m in sorted((m for m in self.missions.values()
+                         if m["target_faction"] == faction and m["system"] == system and m["accepted"]),
+                        key=lambda m: m["accepted"]):
+            reason, ended_at = self.ended.get(m["id"], (None, None))
+            finished = self.redirected.get(m["id"]) or (ended_at if reason == "Completed" else None)
+            if reason in ("Failed", "Abandoned") or (not finished and m["expiry"] and m["expiry"] <= now):
+                continue
+            end = finished or now
+            if runs and m["accepted"] <= runs[-1]["end"] + timedelta(hours=12):
+                runs[-1]["done"] += bool(finished)
+                runs[-1]["total"] += 1
+                runs[-1]["end"] = max(runs[-1]["end"], end)
+            else:
+                runs.append({"done": int(bool(finished)), "total": 1, "end": end})
+        return (runs[-1]["done"], runs[-1]["total"]) if runs else (0, 0)
+
     def mini_report(self, prefs):
         """Only what the mini window can show, from the same figures as Hunt.
-        Its stack is the one in the system you're in, or else the biggest."""
+        Its stack is the one in the system you're in, or else the biggest; with
+        none left to fight, the one waiting to be handed in."""
         state = self.report()
         groups = state.get("groups") or []
         g = next((x for x in groups if x.get("in_position")), None) or (groups[0] if groups else None)
         stack = None
+        if not g and state.get("ready"):
+            r = state["ready"][0]
+            done, total = self.stack_missions(r.get("target_faction"), r.get("target_system"))
+            stack = {"name": r.get("target_faction"), "system": r.get("target_system"), "complete": True,
+                     "missions_done": done, "missions_total": total, "hand_in": r.get("station")}
         if g:
             # Progress along the queue that sets the pace: its missions' kills,
             # counting those already finished (waiting to be handed in), so the
@@ -1254,9 +1284,14 @@ class Tracker:
                         and r.get("giver") in queues:
                     queues[r["giver"]][0] += r.get("required") or 0
             total, left = max(queues.values(), key=lambda q: (q[1], q[0]), default=(0, 0))
+            done_m, total_m = self.stack_missions(g["target_faction"], g["system"])
             stack = {"name": g["target_faction"], "system": g["system"], "needed": g["kills_needed"],
                      "total": total, "done": max(0, total - left),
-                     "held": bool(g.get("held_back")), "next_payout": g.get("next_payout")}
+                     "held": bool(g.get("held_back")), "next_payout": g.get("next_payout"),
+                     # counting kills right now: the mission at the front of each giver's queue
+                     "active": sum(1 for e in g["missions"]
+                                   if not e["queued"] and e["remaining"] > 0 and not e["expired"]),
+                     "missions_done": done_m, "missions_total": total_m}
         session = state.get("session") or {}
         style = self.style()
         return {"fields": prefs["fields"], "size": prefs["size"],
@@ -2719,7 +2754,7 @@ class Handler(BaseHTTPRequestHandler):
                 choice = params["style"][0]
                 save_config(style=choice if choice in STYLES else "auto")
             about = {"journal_dir": str(self.tracker.dir), "data_dir": str(DATA_DIR),
-                     "window_profile": str(window_profile())}
+                     "window_profile": str(window_profile().parent)}
             self._send(200, json.dumps({"require_system": self.tracker.require_system,
                                         "style": self.tracker.style(), "recon": recon_online(),
                                         "about": about, "mini": mini, "mini_fields": MINI_FIELDS,
@@ -2826,10 +2861,29 @@ def open_window(url, tab=False):
     return None
 
 
-def close_with_window(server, window):
-    """Stop when the dashboard is closed, like any other app: when the page
-    says goodbye and nothing asks for data again (a reload asks at once), or
-    when the window's own browser process ends."""
+def show_app_window(url, title):
+    """The dashboard in the app's own window (appwindow.py): frameless, its
+    toolbar the title bar. Returns once that window is closed; returns False
+    at once when it can't open (no pywebview, or no WebView2), so the caller
+    can open the Edge window instead."""
+    if not appwindow.AVAILABLE:
+        return False
+    try:
+        # Its own taskbar button and icon, even when run from source by python.exe.
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("halfklrrex.AntiPiracyNetwork")
+    except (AttributeError, OSError):
+        pass
+    return appwindow.AppWindow(url, title, placement=load_config().get("window"),
+                               save_placement=lambda place: save_config(window=place),
+                               icon_png=RES_DIR / "styles" / "interstellar.png",
+                               data_dir=window_profile().parent).run()
+
+
+def close_with_window(window):
+    """Wait until the dashboard's Edge window is closed, like any other app:
+    when the page says goodbye and nothing asks for data again (a reload asks
+    at once), or when the window's own browser process ends."""
     opened = time.time()
     handed_off = False
     while True:
@@ -2847,9 +2901,6 @@ def close_with_window(server, window):
         quiet = now - Handler.last_seen > 90
         if said_bye or (ended and not handed_off and quiet):
             break
-    if Handler.mini:
-        Handler.mini.close()
-    server.shutdown()
 
 
 def main():
@@ -2888,7 +2939,7 @@ def run():
     one_shot = args.verify or args.console or args.recon is not None or args.recon_check
     if not one_shot and already_running(args.port):
         print(f"{APP_NAME} is already running at {url}")
-        if not args.no_browser:
+        if not args.no_browser and (args.tab or not show_app_window(url, APP_NAME)):
             open_window(url, tab=args.tab)
         return 0
 
@@ -2936,20 +2987,26 @@ def run():
     print(f"  {APP_NAME} running at {url}")
     print("  Close its window to stop (or press Ctrl+C here).")
     print()
-    if not args.no_browser:
-        window = open_window(url, tab=args.tab)
-        if miniwin.SUPPORTED:
-            prefs = mini_prefs()
-            Handler.mini = miniwin.MiniWindow(lambda: tracker.mini_report(mini_prefs()),
-                                              RES_DIR / "fonts" / "saira.ttf")
-            Handler.mini.configure(prefs["on"], prefs["size"], prefs["opacity"], prefs["click_through"])
-        threading.Thread(target=close_with_window, args=(server, window), daemon=True).start()
+    if not args.no_browser and miniwin.SUPPORTED:
+        prefs = mini_prefs()
+        Handler.mini = miniwin.MiniWindow(lambda: tracker.mini_report(mini_prefs()),
+                                          RES_DIR / "fonts" / "saira.ttf")
+        Handler.mini.configure(prefs["on"], prefs["size"], prefs["opacity"], prefs["click_through"])
+    # The server answers from a thread of its own: the app's window needs the
+    # main one. Whichever way the app ends, it's shut down in one place below.
+    serving = threading.Thread(target=server.serve_forever, daemon=True)
+    serving.start()
     try:
-        server.serve_forever()
+        if args.no_browser:
+            while serving.is_alive():
+                serving.join(1)
+        elif args.tab or not show_app_window(url, tracker.style()["name"]):
+            close_with_window(open_window(url, tab=args.tab))
     except KeyboardInterrupt:
         pass
     if Handler.mini:
         Handler.mini.close()
+    server.shutdown()
     print("Stopped.")
     return 0
 

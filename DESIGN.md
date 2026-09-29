@@ -21,6 +21,10 @@ colors:
   gold: "#f0cc70"
   red: "#ff6b61"
   switch-track: "rgba(120, 120, 128, .38)"
+  window-close: "#ff5f57"
+  window-minimize: "#febc2e"
+  window-zoom: "#28c840"
+  window-glyph: "rgba(0, 0, 0, .55)"
 typography:
   display:
     fontFamily: "Saira, -apple-system, BlinkMacSystemFont, SF Pro Display, Segoe UI Variable Display, Segoe UI, system-ui, sans-serif"
@@ -307,7 +311,7 @@ Tinted, quiet, and violet-lettered, like toolbar buttons in a first-party Mac ap
 - **Focus:** 2px imperial outline flush to the edge.
 
 ### Navigation
-- **Toolbar:** sticky, 58px, vibrancy ground with a hairline beneath. Left to right: 30px emblem, wordmark lockup, live state (7px green dot and "Live"; amber when contact is lost), commander, current system, then the segmented control and mission slots (`label-2`, the count amber when full), then Settings (which opens its page) and Refresh buttons.
+- **Toolbar:** sticky, 58px, vibrancy ground with a hairline beneath; in the app's own window it's also the title bar. Left to right: in the app's window, the three 12px window buttons (red close, yellow minimize, green zoom, 8px apart, glyphs showing when any is pointed at, grey when the window is in the background), then the 30px emblem, wordmark lockup, live state (7px green dot and "Live"; amber when contact is lost), commander, current system, then the segmented control and mission slots (`label-2`, the count amber when full), then Settings (which opens its page) and Refresh buttons.
 
 ### Range Row (signature)
 Weather's temperature-range bar, turned into a kill axis. Each mission is a segment on its stack's one shared axis: a provider's queue lays its missions end to end from 0, and all queues in a stack share the scale, so the pace-setting queue reaches the end.

@@ -40,8 +40,14 @@ screen is traceable to a journal event.
   standing). It is on by default and switched off under Settings (the
   commander's choice: opt-out).
 - Viewed by alt-tab on the same monitor as the game, usually mid-session, in a
-  window of its own (an Edge app window with a dedicated profile); closing the
-  window quits the app. The packaged .exe has no console window.
+  window of its own: a frameless WebView2 window (`appwindow.py`, pywebview)
+  whose title bar is the dashboard's toolbar, with macOS-style red, yellow and
+  green buttons at its left (the commander's choice, over Windows' conventions).
+  Dragging empty toolbar and top-edge resizing are done by Python following the
+  mouse (WebView2 holds it); the other edges resize natively; its size and place
+  are remembered. Without pywebview or WebView2 it falls back to an Edge app
+  window. Closing the window quits the app. The packaged .exe has no console
+  window.
 - Journal folder: `%USERPROFILE%\Saved Games\Frontier Developments\Elite Dangerous`.
 
 ## Capabilities and Constraints
@@ -115,7 +121,9 @@ screen is traceable to a journal event.
   draws with DirectComposition, which window regions don't clip, so its white
   frame always showed. Kills to go, stack progress (along the pace-setting
   queue, finished missions included), target check and wanted alert by default;
-  next payout, credits an hour and mission slots on request. Drawn in Saira from
+  next payout (and how many missions are counting kills), credits an hour and
+  missions left in the stack (grouped as History groups stacks; "Missions
+  complete" in green at the end) on request. Drawn in Saira from
   `fonts/saira.ttf`, loaded privately (Windows can't read WOFF2). Always on top,
   click-through, out of the taskbar and Alt-Tab, never takes focus; size and
   opacity are settings. Off by default. It needs the game in Borderless or

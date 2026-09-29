@@ -19,11 +19,14 @@ welcome from your power's Anti-Piracy Network (click or press any key to skip
 it). **Close the window to quit.** Opening the .exe again while it's running just
 opens another window onto it.
 
-The window is a Microsoft Edge app window (Edge ships with Windows), with its own
-profile so it stays out of your normal browsing and remembers its size and
-place. Without Edge or Chrome it opens as a tab in your usual browser instead;
-`--tab` does that on purpose. Either way the dashboard is also at
-<http://127.0.0.1:8765/> while the app runs.
+The window is the app's own, drawn by WebView2 (part of Windows 11): no title
+bar, just the dashboard's toolbar, with the red, yellow and green buttons at
+its left to close, minimize and zoom. Drag any empty part of the toolbar to move
+it, double-click it to zoom, and resize it from any edge. It remembers its size
+and place. Without WebView2 it opens as a Microsoft Edge app window instead, and
+without Edge or Chrome as a tab in your usual browser; `--tab` does that on
+purpose. Either way the dashboard is also at <http://127.0.0.1:8765/> while the
+app runs.
 
 The .exe isn't code-signed, so Windows may say it's from an unknown publisher.
 Choose **More info → Run anyway**.
@@ -34,8 +37,14 @@ Choose **More info → Run anyway**.
 python stacker.py
 ```
 
-or double-click `Start Anti-Piracy Network.bat` on Windows. It uses only Python's standard
-library: there's nothing to `pip install`.
+or double-click `Start Anti-Piracy Network.bat` on Windows. It runs on Python's standard
+library alone. For the app's own window (above), also install pywebview:
+
+```bash
+python -m pip install pywebview
+```
+
+Without it, the dashboard opens as an Edge app window.
 
 Your journal folder is found automatically at
 `%USERPROFILE%\Saved Games\Frontier Developments\Elite Dangerous` (OneDrive
@@ -144,9 +153,10 @@ all four added together.
 
 A small panel at the top-left of your screen, above the game, so you can read
 the stack without alt-tabbing: kills to go, the stack's progress, the target
-check and any wanted alert, and if you like the next payout, credits an hour
-and mission slots. Switch it on, and choose what it shows, its size and its
-opacity, under **Settings**. Clicks go straight through it to the game (you
+check and any wanted alert, and if you like the next payout (with how many
+missions are counting kills right now), credits an hour and missions left in
+the stack (17/17 counting down to "Missions complete"). Switch it on, and
+choose what it shows, its size and its opacity, under **Settings**. Clicks go straight through it to the game (you
 can turn that off), it stays out of the taskbar and Alt-Tab, and it opens and
 closes with the app.
 
@@ -366,12 +376,12 @@ an Anti-Piracy Network), gets the Interstellar style.
 ## Build the .exe yourself
 
 ```bash
-python -m pip install pyinstaller
+python -m pip install pyinstaller pywebview
 python build.py
 ```
 
-The result is `dist/Anti-Piracy-Network.exe`, with the dashboard, font and every style's emblem
-inside it. Your own settings, corrections and emblem live in the app's folder
+The result is `dist/Anti-Piracy-Network.exe`, with the dashboard, fonts, every style's emblem
+and the app's window (pywebview) inside it. Your own settings, corrections and emblem live in the app's folder
 beside your journals.
 
 ## Files
@@ -380,6 +390,7 @@ beside your journals.
 | --- | --- |
 | `stacker.py` | The app: reads the journal and serves the dashboard |
 | `recon.py` | Recon: asks INTRA and EDSM, ranks with your journal |
+| `appwindow.py` | The app's own window: frameless, the toolbar its title bar |
 | `miniwin.py` | The mini window: places and styles it over the game |
 | `materials.py` | Each engineering material's grade, and how many you can hold |
 | `dashboard.html` | The dashboard page |

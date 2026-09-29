@@ -1,7 +1,10 @@
 """Build "Anti-Piracy-Network.exe": one file that runs without Python.
 
-    python -m pip install pyinstaller
+    python -m pip install pyinstaller pywebview
     python build.py
+
+pywebview gives the .exe the app's own window (appwindow.py); built without
+it, the .exe opens the dashboard in an Edge app window instead.
 
 The .exe lands in dist/. It carries dashboard.html, the Saira font and every
 style's emblem inside it; your own settings, corrections and emblem live in an

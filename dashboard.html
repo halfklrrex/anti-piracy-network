@@ -35,6 +35,11 @@
     --amber: #ffb340;
     --gold: #f0cc70;
     --red: #ff6b61;
+    /* the app window's own buttons, macOS's colours (DESIGN.md window-*) */
+    --window-close: #ff5f57;
+    --window-minimize: #febc2e;
+    --window-zoom: #28c840;
+    --window-glyph: rgba(0, 0, 0, .55);
     --radius: 18px;
     --sans: "Saira", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     --display: "Saira", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
@@ -487,6 +492,34 @@
   .ready .finished .row-link { color: var(--imperial); }
   .stack-meta .yours { color: var(--imperial); }
 
+  /* ---------- The app's own window: the toolbar is its title bar, with the
+     red, yellow and green buttons at its left, as on a Mac. Only there; in a
+     browser the toolbar is as it always was. */
+  body.native .toolbar { user-select: none; -webkit-user-select: none; }
+  .lights { display: flex; gap: 8px; flex: none; margin-right: -6px; }
+  .light {
+    position: relative; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%;
+    cursor: default; transition: filter .12s, background-color .15s;
+  }
+  .light.close { background: var(--window-close); }
+  .light.min { background: var(--window-minimize); }
+  .light.zoom { background: var(--window-zoom); }
+  /* pointing at any of the three shows what each does */
+  .light::after {
+    content: ""; position: absolute; inset: 0; display: grid; place-items: center;
+    font: 700 11px/12px var(--sans); color: var(--window-glyph); opacity: 0; transition: opacity .12s;
+  }
+  .light.close::after { content: "✕"; transform: scale(.7); }
+  .light.min::after { content: "−"; }
+  .light.zoom::after { content: "+"; }
+  .lights:hover .light::after { opacity: 1; }
+  .light:active { filter: brightness(.75); }
+  .light:focus-visible { outline: 2px solid var(--imperial); outline-offset: 2px; }
+  /* in the background, they go grey */
+  body.inactive .lights:not(:hover) .light { background: rgba(255, 255, 255, .18); }
+  /* the top edge resizes the window */
+  .grip { position: absolute; inset: 0 0 auto 0; height: 4px; cursor: ns-resize; z-index: 1; }
+
   /* ---------- Settings: a page of its own, reached from the toolbar */
   .btn[aria-current="page"] { background: rgba(255, 255, 255, .16); color: var(--label); }
   #settingsView .side { position: static; max-height: none; overflow: visible; }
@@ -733,6 +766,12 @@
 </div>
 
 <header class="toolbar">
+  <div class="grip" id="winGrip" hidden></div>
+  <div class="lights" id="lights" hidden>
+    <button type="button" class="light close" id="winClose" aria-label="Close"></button>
+    <button type="button" class="light min" id="winMin" aria-label="Minimize"></button>
+    <button type="button" class="light zoom" id="winZoom" aria-label="Zoom"></button>
+  </div>
   <div class="brand">
     <div class="emblem" id="emblem" title="%%POWER%%">
       <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#i-mark"/></svg>
@@ -2293,7 +2332,7 @@ async function openSettings() {
     const a = cfg.about || {};
     $("aboutList").innerHTML = [
       ["Journal folder", a.journal_dir], ["Your settings", a.data_dir],
-      ["Window profile", a.window_profile],
+      ["Window data", a.window_profile],
     ].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
     renderMiniCard(cfg);
   } catch (err) { /* the hunt page shows lost contact */ }
@@ -2301,7 +2340,7 @@ async function openSettings() {
 // The mini window's card: what the app says it has, and each change saved
 // (and applied to the open window) at once.
 const MINI_LABELS = { kills: "Kills to go", progress: "Stack progress", payout: "Next payout",
-  target: "Target check", wanted: "Wanted or fine", session: "Credits an hour", slots: "Mission slots" };
+  target: "Target check", wanted: "Wanted or fine", session: "Credits an hour", slots: "Missions left" };
 function renderMiniCard(cfg) {
   const m = cfg.mini || {};
   $("miniOn").checked = !!m.on;
@@ -2430,6 +2469,32 @@ document.addEventListener("keydown", (ev) => {
 addEventListener("pagehide", () => {
   try { navigator.sendBeacon("/api/bye"); } catch (err) { /* nothing to tell */ }
 });
+
+// The app's own window (appwindow.py) gives the page window.pywebview. Then the
+// toolbar is the title bar: the lights close, minimize and zoom; dragging any
+// empty part of it moves the window, double-clicking zooms, and the top edge
+// resizes. Python follows the mouse for both, since WebView2 holds it.
+function becomeTitleBar() {
+  const api = window.pywebview && window.pywebview.api;
+  if (!api || document.body.classList.contains("native")) return;
+  document.body.classList.add("native");
+  $("lights").hidden = false;
+  $("winGrip").hidden = false;
+  $("winClose").addEventListener("click", () => api.close());
+  $("winMin").addEventListener("click", () => api.minimize());
+  $("winZoom").addEventListener("click", () => api.zoom());
+  const bar = document.querySelector(".toolbar");
+  const controls = "button, a, input, select, label, .segmented, .lights, .grip";
+  bar.addEventListener("mousedown", (ev) => {
+    if (ev.button === 0 && !ev.target.closest(controls)) api.drag();
+  });
+  bar.addEventListener("dblclick", (ev) => { if (!ev.target.closest(controls)) api.zoom(); });
+  $("winGrip").addEventListener("mousedown", (ev) => { if (ev.button === 0) api.resize_top(); });
+  addEventListener("blur", () => document.body.classList.add("inactive"));
+  addEventListener("focus", () => document.body.classList.remove("inactive"));
+}
+addEventListener("pywebviewready", becomeTitleBar);
+becomeTitleBar();
 
 // Settings: pick a style, or Automatic (the power you're pledged to). The
 // choice is saved beside the app, and the page reloads wearing it.

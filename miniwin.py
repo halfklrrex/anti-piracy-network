@@ -140,6 +140,7 @@ class MiniWindow:
         self.tkfont = tkfont
         root = tkinter.Tk()
         root.withdraw()
+        root.title("Anti-Piracy Network mini window")
         root.overrideredirect(True)
         root.configure(bg=KEY)
         root.attributes("-topmost", True)
@@ -280,18 +281,23 @@ class MiniWindow:
         if "kills" in want:
             big = self._font("light", S(44))
             has = m.get("kills") is not None and m.get("stacks")
-            number = cr(m["kills"]) if has else "—"
-            c.create_text(px - S(2), y, text=number, font=big, fill=LABEL if has else label3, anchor="nw")
+            complete = bool(st and st.get("complete"))
+            number = cr(m["kills"]) if has else "0" if complete else "—"
+            c.create_text(px - S(2), y, text=number, font=big, fill=LABEL if has or complete else label3, anchor="nw")
             num_h = big.metrics("ascent") + big.metrics("descent") // 2
+            head_colour = LABEL
             if has:
                 head = "kills to go"
                 sub = (st or {}).get("name", "") + (f" · {m['stacks']} stacks" if m["stacks"] > 1 else "")
+            elif complete:
+                head, head_colour = "Stack complete", GREEN
+                sub = f"Hand in at {st['hand_in']}" if st.get("hand_in") else st.get("name", "")
             else:
                 head, sub = "No stacks", "No massacre missions held"
             bx = px + big.measure(number) + S(8)
             f13, f11 = self._font("bold", S(13)), self._font("regular", S(11.5))
             top = y + num_h - f13.metrics("linespace") - f11.metrics("linespace")
-            c.create_text(bx, top, text=self._fit(head, f13, right - bx), font=f13, fill=LABEL, anchor="nw")
+            c.create_text(bx, top, text=self._fit(head, f13, right - bx), font=f13, fill=head_colour, anchor="nw")
             c.create_text(bx, top + f13.metrics("linespace"), text=self._fit(sub, f11, right - bx),
                           font=f11, fill=label2, anchor="nw")
             y += num_h + S(2)
@@ -312,8 +318,10 @@ class MiniWindow:
 
         if "payout" in want and st and st.get("next_payout"):
             p = st["next_payout"]
-            line(label3, [("Next payout in ", False, label2), (cr(p["kills"]), True, LABEL),
-                          (f" · {plural(p['missions'], 'mission')} · {short(p['reward'])} Cr", False, label2)])
+            runs = [("Next payout in ", False, label2), (cr(p["kills"]), True, LABEL)]
+            if st.get("active"):
+                runs += [(" · ", False, label2), (str(st["active"]), True, LABEL), (" active", False, label2)]
+            line(label3, runs + [(f" · {short(p['reward'])} Cr", False, label2)])
 
         t = m.get("target")
         if "target" in want and t:
@@ -342,8 +350,11 @@ class MiniWindow:
         session, slots = m.get("session") or {}, m.get("slots")
         left = ([("This session ", False, label2), (f"{short(session['per_hour'])} Cr/h", True, LABEL)]
                 if "session" in want and session.get("per_hour") else None)
-        tail = ([("Missions ", False, label2), (f"{slots['used']}/{slots['cap']}", True, LABEL)]
-                if "slots" in want and slots else None)
+        tail = None
+        if "slots" in want and st and st.get("missions_total"):
+            left_m = st["missions_total"] - st["missions_done"]
+            tail = ([("Missions ", False, label2), (f"{left_m}/{st['missions_total']}", True, LABEL)] if left_m
+                    else [("Missions complete", True, GREEN)])
         if left or tail:
             gap()
             if left:
