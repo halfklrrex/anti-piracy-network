@@ -128,6 +128,8 @@ all four added together.
   cashing in at your power's Power Contact adds none.
 - **Expiry warnings**: a queued mission earns nothing until its turn. If it won't
   get its kills before its deadline at your pace, its deadline turns amber.
+- **Next deadline**: the soonest deadline among the missions still needing
+  kills, beside your totals and in the mini window. Amber under two hours.
 - **Target check**: lock a ship and the stack says whether killing it counts,
   whether it's the right faction in the wrong system, or whether it's clean and
   attacking it would be a crime.
@@ -151,15 +153,15 @@ all four added together.
 
 ## Mini window
 
-A small panel in a corner of your screen, above the game, so you can read
-the stack without alt-tabbing: kills to go, the stack's progress, the target
-check and any wanted alert, and if you like the next payout (with how many
-missions are counting kills right now), credits an hour and missions left in
-the stack (17/17 counting down to "Missions complete"). Switch it on, and
+A small panel in a corner of your screen, above the game, so you can read the
+stack without alt-tabbing: kills to go, the stack's progress, the next deadline,
+the target check and any wanted alert, and if you like the next payout (with how
+many missions are counting kills right now), credits an hour and missions left
+in the stack (17/17 counting down to "Missions complete"). Switch it on, and
 choose what it shows, its size, which corner it sits in (top-left unless you
-pick another) and its opacity, under **Settings**. Clicks go straight through it to the game (you
-can turn that off), it stays out of the taskbar and Alt-Tab, and it opens and
-closes with the app.
+pick another) and its opacity, under **Settings**. Clicks go straight through it
+to the game (you can turn that off), it stays out of the taskbar and Alt-Tab,
+and it opens and closes with the app.
 
 It's only the rounded panel: everything around it is see-through, so the game
 shows right up to its edges.

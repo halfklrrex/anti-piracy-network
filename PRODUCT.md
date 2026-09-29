@@ -66,6 +66,10 @@ screen is traceable to a journal event.
 - Bounties per stack (bounties only; combat bonds are kept separate), time to
   finish at this session's or the usual pace, and amber warnings for queued
   missions that will expire before their turn.
+- Next deadline: the soonest among the missions still needing kills, queued ones
+  included, in the side column and the mini window; amber under two hours, as
+  the missions' own countdowns. Finished missions don't count (the game keeps
+  them payable past it).
 - Free kills: for every giver behind the pace-setting queue, how many kills a
   further mission from them could need and still add nothing to the stack's
   cost (shown only while a mission slot is free).
@@ -121,17 +125,17 @@ screen is traceable to a journal event.
   Edge window was tried first and dropped: Edge draws with DirectComposition,
   which window regions don't clip, so its white frame always showed. Kills to
   go, stack progress (along the pace-setting queue, finished missions included),
-  target check and wanted alert by default; next payout (and how many missions
-  are counting kills), credits an hour and missions left in the stack (grouped
-  as History groups stacks; "Missions complete" in green at the end) on request.
-  Drawn in Saira from `fonts/saira.ttf`, loaded privately (Windows can't read
-  WOFF2). Always on top, click-through, out of the taskbar and Alt-Tab, never
-  takes focus; size, corner and opacity are settings. It keeps 12px in from the
-  screen's work area, clear of the taskbar; in a bottom corner it grows upwards.
-  Off by default. It needs the game in Borderless or Windowed mode (exclusive
-  fullscreen can't be overlaid), which Settings detects from
-  `DisplaySettings.xml`. It reads the tracker directly, so it has no bearing on
-  when the app quits, and it closes with the app.
+  next deadline, target check and wanted alert by default; next payout (and how
+  many missions are counting kills), credits an hour and missions left in the
+  stack (grouped as History groups stacks; "Missions complete" in green at the
+  end) on request. Drawn in Saira from `fonts/saira.ttf`, loaded privately
+  (Windows can't read WOFF2). Always on top, click-through, out of the taskbar
+  and Alt-Tab, never takes focus; size, corner and opacity are settings. It
+  keeps 12px in from the screen's work area, clear of the taskbar; in a bottom
+  corner it grows upwards. Off by default. It needs the game in Borderless or
+  Windowed mode (exclusive fullscreen can't be overlaid), which Settings detects
+  from `DisplaySettings.xml`. It reads the tracker directly, so it has no
+  bearing on when the app quits, and it closes with the app.
 - Stack report cards: every stack has its own page under Statistics (givers,
   ships killed and flown, materials, bounty merits) with a 1600×900 PNG export
   sharing the session card's drawing (`drawCard`). Finished stacks link to it
