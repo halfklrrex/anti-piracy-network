@@ -193,6 +193,8 @@
   .facts div { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--hairline); }
   .facts dt { font-size: 13px; color: var(--label-2); }
   .facts dd { margin: 0; font-size: 13px; font-weight: 600; text-align: right; white-space: nowrap; }
+  .facts dd.soon { color: var(--amber); }
+  .facts dd.gone { color: var(--red); }
 
   /* ---------- ready to hand in: Stocks' watchlist, grouped by station */
   .ready h2 { font: 600 17px/1.3 var(--display); }
@@ -1056,6 +1058,13 @@ function renderSide(s) {
   const ci = s.cash_in;
   if (ci) facts.push(["To cash in", `${short(ci.total)} Cr`, ` title="${esc(`Bounties not yet cashed in: ${
     ci.factions.map((f) => `${f.name} ${cr(f.credits)} Cr`).join(", ")}`)}"`]);
+  // Ticks in place (tickClocks), like the missions' own countdowns.
+  const due = soonestDue(s.groups);
+  if (due) {
+    const u = until(due.m.expiry);
+    facts.push(["Next deadline", u.text, ` class="${u.cls}" data-expiry="${esc(due.m.expiry)}" title="${esc(
+      `${due.m.giver}, against ${due.g.target_faction} in ${due.g.system}: time left to finish its kills`)}"`]);
+  }
 
   $("side").innerHTML = `
     <section class="hero" aria-live="polite">
@@ -1183,6 +1192,16 @@ function finishedStacks(ready, groups) {
   if (!done.length) return "";
   return `<p class="lede finished">${done.map((k) => `<a class="row-link" href="#statistics/stack/${encodeURIComponent(k)}">${
     esc(k.split("|")[0])} · report</a>`).join(" · ")}</p>`;
+}
+
+// The soonest deadline among missions still needing kills, in any stack,
+// queued ones included: a finished mission stays payable past its own.
+function soonestDue(groups) {
+  let best = null;
+  for (const g of groups) for (const m of g.missions) {
+    if (m.expiry && !m.expired && (!best || m.expiry < best.m.expiry)) best = { m, g };
+  }
+  return best;
 }
 
 /* ------------------------------------------------------------------ stacks */
@@ -1494,6 +1513,11 @@ function tickClocks() {
     const u = until(el.dataset.expiry);
     el.className = `m-due ${el.dataset.risk === "1" ? "risk" : u.cls}`;
     el.lastElementChild.textContent = u.text;
+  });
+  document.querySelectorAll(".facts dd[data-expiry]").forEach((el) => {
+    const u = until(el.dataset.expiry);
+    el.className = u.cls;
+    el.textContent = u.text;
   });
 }
 
@@ -2348,7 +2372,7 @@ async function openSettings() {
 }
 // The mini window's card: what the app says it has, and each change saved
 // (and applied to the open window) at once.
-const MINI_LABELS = { kills: "Kills to go", progress: "Stack progress", payout: "Next payout",
+const MINI_LABELS = { kills: "Kills to go", progress: "Stack progress", deadline: "Next deadline", payout: "Next payout",
   target: "Target check", wanted: "Wanted or fine", session: "Credits an hour", slots: "Missions left" };
 const MINI_CHOICES = { size: "m", corner: "top-left" };    // each radio group's default
 function renderMiniCard(cfg) {

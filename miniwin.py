@@ -100,6 +100,13 @@ def short(n):
             else f"{round(n / 1e3)}K" if n >= 1e4 else cr(n))
 
 
+def until(seconds):
+    """Time left as the Hunt page shows it: 6d 15h, 1h 20m, 19m 42s."""
+    s = max(0, int(seconds))
+    d, h, m = s // 86400, s % 86400 // 3600, s % 3600 // 60
+    return f"{d}d {h}h" if d else f"{h}h {m}m" if h else f"{m}m {s % 60}s"
+
+
 def plural(n, one):
     return f"{n} {one}" + ("" if n == 1 else "s")
 
@@ -332,6 +339,16 @@ class MiniWindow:
                                 False, label2)], right, line_px)
             y += line_h
             drawn = True
+
+        due = m.get("deadline")
+        if "deadline" in want and due:
+            # Amber under two hours, as on the Hunt page.
+            soon = due["left"] < 7200
+            text, figure = (AMBER, AMBER) if soon else (label2, LABEL)
+            runs = [("Next deadline in ", False, text), (until(due["left"]), True, figure)]
+            if due.get("stack"):
+                runs.append((f" · {due['stack']}", False, text))
+            line(AMBER if soon else label3, runs)
 
         if "payout" in want and st and st.get("next_payout"):
             p = st["next_payout"]

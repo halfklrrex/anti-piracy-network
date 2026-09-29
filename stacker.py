@@ -270,8 +270,8 @@ def recon_prefs(changes=None):
 
 # The mini window's choices, kept in config.json. Off until you turn it on:
 # over a game in exclusive fullscreen it can't show at all.
-MINI_FIELDS = ("kills", "progress", "payout", "target", "wanted", "session", "slots")
-MINI_DEFAULTS = {"on": False, "fields": ["kills", "progress", "target", "wanted"], "size": "m",
+MINI_FIELDS = ("kills", "progress", "deadline", "payout", "target", "wanted", "session", "slots")
+MINI_DEFAULTS = {"on": False, "fields": ["kills", "progress", "deadline", "target", "wanted"], "size": "m",
                  "opacity": 90, "click_through": True, "corner": "top-left"}
 
 
@@ -1294,12 +1294,23 @@ class Tracker:
                      "active": sum(1 for e in g["missions"]
                                    if not e["queued"] and e["remaining"] > 0 and not e["expired"]),
                      "missions_done": done_m, "missions_total": total_m}
+        # The soonest deadline among missions still needing kills, in any
+        # stack, queued ones included: a finished mission stays payable past
+        # its own. Counted from now, so it ticks down with every redraw.
+        due = min(((e["expiry"], x) for x in groups for e in x["missions"] if e["expiry"] and not e["expired"]),
+                  key=lambda pair: pair[0], default=None)
+        deadline = None
+        if due:
+            left = (parse_ts(due[0]) - utcnow()).total_seconds()
+            other = (due[1]["target_faction"], due[1]["system"]) != (g["target_faction"], g["system"])
+            if left > 0:
+                deadline = {"left": left, "stack": due[1]["target_faction"] if other else None}
         session = state.get("session") or {}
         style = self.style()
         return {"fields": prefs["fields"], "size": prefs["size"],
                 "style": {k: style[k] for k in ("accent", "deep", "ground")},
                 "kills": (state.get("totals") or {}).get("kills_needed"), "stacks": len(groups),
-                "stack": stack, "target": state.get("target"), "legal": state.get("legal"),
+                "stack": stack, "deadline": deadline, "target": state.get("target"), "legal": state.get("legal"),
                 "session": {"per_hour": session.get("credits_per_hour")} if session else None,
                 "slots": state.get("slots")}
 
