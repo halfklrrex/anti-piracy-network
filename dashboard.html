@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>%%NAME%%</title>
-<link rel="icon" href="/emblem">
+<link rel="icon" href="/app-icon">
 <style>
   /* Saira (SIL OFL, fonts/OFL.txt), served by stacker.py from fonts/ so the page
      never goes online. Without the file everything falls back to the system sans. */
@@ -108,8 +108,8 @@
   .link.quiet { color: var(--label-2); }
   .link.quiet:hover { background: rgba(255, 255, 255, .07); color: var(--label); }
 
-  /* ---------- view options popover */
-  #viewopts {
+  /* ---------- Recon's Refine popover */
+  #reconopts {
     position: fixed; inset: 66px 20px auto auto; margin: 0;
     width: 330px; padding: 6px;
     background: color-mix(in srgb, var(--surface-3) 94%, transparent);
@@ -119,9 +119,8 @@
     color: var(--label);
     box-shadow: 0 20px 50px -10px rgba(0, 0, 0, .6);
   }
-  #viewopts { width: 360px; }
   .opt-head { padding: 10px 12px 6px; font-size: 12px; color: var(--label-2); }
-  .styles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 0 6px 8px; }
+  .styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; padding: 0 16px 18px; }
   .style-tile {
     display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 4px 7px;
     border: 1px solid transparent; border-radius: 10px; background: none; color: var(--label-2);
@@ -135,6 +134,9 @@
   .opt { display: flex; gap: 14px; align-items: center; padding: 11px 12px; border-radius: 8px; cursor: pointer; }
   .opt + .opt { border-top: 1px solid var(--hairline); border-radius: 0 0 8px 8px; }
   .opt:hover { background: rgba(255, 255, 255, .04); }
+  /* In a Settings card, option rows run edge to edge between hairlines. */
+  .stack .opt { padding: 13px 22px; border-radius: 0; }
+  .stack .opt:last-child { padding-bottom: 16px; }
   .opt div { flex: 1; }
   .opt strong { display: block; font-size: 14px; font-weight: 600; }
   .opt small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.35; color: var(--label-2); }
@@ -372,7 +374,7 @@
   .st-order { color: var(--imperial); font-weight: 600; margin-right: 6px; }
 
   /* ---------- the other pages: side columns scroll with the page */
-  #commanderView .side, #statsView .side { position: static; max-height: none; overflow: visible; }
+  #commanderView .side, #statsView .side, #reconView .side { position: static; max-height: none; overflow: visible; }
   .layout.one { grid-template-columns: minmax(0, 1fr); max-width: 980px; }
   .card-body { padding: 0 22px 18px; }
   .cards2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
@@ -444,6 +446,68 @@
   .lost { color: var(--amber); }
   .dim { color: var(--label-3); }
 
+  /* ---------- Recon: where to stack next */
+  #reconView .side { gap: 22px; }
+  /* Refine opens over the side column it belongs to, not under Settings. */
+  #reconopts { width: 340px; padding: 6px 6px 12px; inset: 66px auto auto max(16px, calc((100vw - 1440px) / 2 + 28px)); }
+  #reconopts .segmented, #reconopts select { margin: 0 12px; }
+  #reconopts .segmented { display: flex; }
+  #reconopts .segmented button { flex: 1; padding: 0 8px; }
+  .segmented button[aria-checked="true"] { background: rgba(255, 255, 255, .16); color: var(--label); box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+  .field { display: grid; gap: 6px; }
+  .field > label { font-size: 12px; color: var(--label-2); }
+  .field-row { display: flex; gap: 8px; }
+  .field input, .field select, #reconopts select {
+    min-width: 0; flex: 1; height: 30px; padding: 0 10px; border-radius: 8px;
+    border: 1px solid var(--hairline-strong); background: var(--ground); color: var(--label);
+    font: 500 13px var(--sans); caret-color: var(--imperial);
+  }
+  #reconopts select { width: calc(100% - 24px); }
+  .field input::placeholder { color: var(--label-3); }
+  .field input:focus, .field select:focus, #reconopts select:focus { outline: 2px solid var(--imperial); outline-offset: 0; }
+  .field .link { justify-self: start; margin-left: -7px; }
+  .btn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--imperial); }
+  .recon-src { padding: 0 22px 8px; }
+  .recon-src .station:first-child { border-top: 0; }
+  .recon-src .station summary { grid-template-columns: 14px minmax(0, 1fr) auto; }
+  .recon-src .count { font-size: 13px; color: var(--label-2); white-space: nowrap; }
+  .recon-src .count b { font-size: 15px; color: var(--label); font-weight: 600; }
+  .recon-src li.off { color: var(--label-3); }
+  .recon-src li .states.warn { color: var(--amber); }
+  .stack.pending { opacity: .62; }
+  .stack.pending .stack-num b { color: var(--label-2); }
+  .foot a { color: var(--label-2); }
+  .row-link { color: inherit; text-decoration: none; }
+  .row-link:hover { color: var(--imperial); text-decoration: underline; text-underline-offset: 3px; }
+  .ready .finished { margin: 12px 0 0; }
+  .cashin { margin: -22px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--label-2); }
+  .cashin b { color: var(--label); font-weight: 600; }
+  .cashin b.gold { color: var(--gold); }
+  [data-bounty="underline"] .cashin b.gold { color: var(--label); text-decoration: underline 2px var(--gold); text-underline-offset: 3px; }
+  .ready .finished .row-link { color: var(--imperial); }
+  .stack-meta .yours { color: var(--imperial); }
+
+  /* ---------- Settings: a page of its own, reached from the toolbar */
+  .btn[aria-current="page"] { background: rgba(255, 255, 255, .16); color: var(--label); }
+  #settingsView .side { position: static; max-height: none; overflow: visible; }
+  .about { margin: 0; padding: 0 22px 16px; }
+  .about div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--hairline); font-size: 13px; }
+  .about div:first-child { border-top: 0; }
+  .about dt { color: var(--label-2); }
+  .about dd { margin: 0; overflow-wrap: anywhere; }
+  .stack .opt-head { padding: 14px 22px 8px; border-top: 1px solid var(--hairline); }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 2px 16px; padding: 0 22px 10px; }
+  .checks label { display: flex; gap: 9px; align-items: center; padding: 5px 0; font-size: 13.5px; cursor: pointer; }
+  .checks input { width: 16px; height: 16px; margin: 0; accent-color: var(--imperial-deep); }
+  .card-seg { display: flex; margin: 0 22px 12px; max-width: 360px; }
+  .card-seg button { flex: 1; }
+  .range-row { display: flex; padding: 0 22px 12px; max-width: 404px; }
+  .range-row input { flex: 1; accent-color: var(--imperial-deep); }
+  #miniNote.warn { color: var(--amber); }
+  #miniCard.unavailable .opt, #miniCard.unavailable .checks, #miniCard.unavailable .card-seg,
+  #miniCard.unavailable .range-row { opacity: .45; pointer-events: none; }
+  #miniCard.unavailable .opt:first-of-type { opacity: 1; }
+
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes tick {
     from { transform: translateY(10px); opacity: .25; color: var(--imperial); }
@@ -458,8 +522,16 @@
   }
   /* The longer style names need room: shed toolbar extras as the window narrows
      (the system is in the hero; the welcome card greets you by name). */
-  @media (max-width: 1240px) and (min-width: 721px) { .status .place-now { display: none; } }
-  @media (max-width: 1100px) and (min-width: 721px) { .status .cmdr, .tools .label { display: none; } }
+  @media (max-width: 1320px) and (min-width: 721px) { .status .place-now { display: none; } }
+  @media (max-width: 1260px) and (min-width: 721px) { .status .cmdr, .tools .label { display: none; } }
+  /* Five pages don't fit beside the name under 1000px: the view switch takes
+     a row of its own, as on a phone. */
+  @media (max-width: 1000px) {
+    .toolbar { flex-wrap: wrap; height: auto; gap: 10px 16px; padding: 10px 18px; }
+    .viewbar { order: 10; flex-basis: 100%; }
+    .viewbar .segmented { flex: 1; }
+    .viewbar .segmented button { flex: 1; }
+  }
   @media (max-width: 1100px) {
     .list-head, .hist li { grid-template-columns: minmax(0, 1fr) 50px 84px 84px 84px; }
     .hist li > .per-hour, .list-head .per-hour { display: none; }
@@ -484,7 +556,9 @@
     }
     .hist li > .per-hour { display: block; }
     .status .place-now, .tools .label, .slots .word { display: none; }
-    .viewbar .segmented button { padding: 0 8px; }
+    /* Five pages and the slot count in one phone-wide row. */
+    .viewbar { gap: 12px; }
+    .viewbar .segmented button { padding: 0 4px; font-size: 12.5px; }
     .wordmark h1 { letter-spacing: .12em; }
     .wordmark h1 small { letter-spacing: .19em; }
     .big { font-size: 80px; }
@@ -677,11 +751,12 @@
       <button type="button" role="tab" data-view="commander" aria-selected="false">Commander</button>
       <button type="button" role="tab" data-view="stats" aria-selected="false">Statistics</button>
       <button type="button" role="tab" data-view="history" aria-selected="false">History</button>
+      <button type="button" role="tab" data-view="recon" aria-selected="false">Recon</button>
     </div>
     <span class="slots" id="slots" title="Missions of every kind you're holding, against the game's limit of 20"></span>
   </div>
   <div class="tools">
-    <button class="btn" popovertarget="viewopts" type="button" aria-label="Settings">
+    <button class="btn" id="settingsBtn" type="button" aria-label="Settings">
       <svg class="i"><use href="#i-sliders"/></svg><span class="label">Settings</span>
     </button>
     <button class="btn" id="refresh" type="button" aria-label="Refresh — re-read the journal now" title="Re-read the journal right now">
@@ -690,20 +765,28 @@
   </div>
 </header>
 
-<div id="viewopts" popover>
-  <p class="opt-head">Style</p>
-  <div class="styles" id="styleGrid" role="radiogroup" aria-label="Style"></div>
-  <p class="opt-head">View</p>
-  <label class="opt">
-    <div><strong>Hand-in station on every mission</strong>
-      <small>Show which station each mission goes back to. Where the pirates are is on each stack.</small></div>
-    <input type="checkbox" class="switch" id="showwhere" role="switch" checked>
-  </label>
-  <label class="opt">
-    <div><strong>Only count kills in the target system</strong>
-      <small>The game only credits kills made there. Turn off only to troubleshoot.</small></div>
-    <input type="checkbox" class="switch" id="sysmatch" role="switch" checked>
-  </label>
+<div id="reconopts" popover>
+  <p class="opt-head">Count givers from</p>
+  <div class="segmented" role="radiogroup" aria-label="Count givers from" data-pref="allegiance">
+    <button type="button" role="radio" data-value="any">Any</button>
+    <button type="button" role="radio" data-value="Empire">Empire</button>
+    <button type="button" role="radio" data-value="Federation">Federation</button>
+    <button type="button" role="radio" data-value="Alliance">Alliance</button>
+    <button type="button" role="radio" data-value="Independent">Indep.</button>
+  </div>
+  <p class="opt-head">Target system held by</p>
+  <select id="reconPower" aria-label="Target system held by"><option value="any">Any power, or none</option></select>
+  <p class="opt-head">Search within</p>
+  <div class="segmented" role="radiogroup" aria-label="Search within" data-pref="radius">
+    <button type="button" role="radio" data-value="50">50 ly</button>
+    <button type="button" role="radio" data-value="100">100 ly</button>
+    <button type="button" role="radio" data-value="200">200 ly</button>
+  </div>
+  <p class="opt-head">Sort by</p>
+  <div class="segmented" role="radiogroup" aria-label="Sort by" data-pref="sort">
+    <button type="button" role="radio" data-value="givers">Most givers</button>
+    <button type="button" role="radio" data-value="pay">Best pay</button>
+  </div>
 </div>
 
 <div class="layout" id="stackView">
@@ -722,6 +805,98 @@
 <div class="layout" id="commanderView" hidden>
   <aside class="side" id="cside" aria-label="This session"></aside>
   <main class="main" id="cmain"></main>
+</div>
+
+<div class="layout" id="reconView" hidden>
+  <aside class="side" id="rside" aria-label="Recon">
+    <section class="hero" id="rhero"></section>
+    <form class="field" id="reconRef" autocomplete="off">
+      <label for="reconSystem">Search around</label>
+      <div class="field-row">
+        <input id="reconSystem" type="text" spellcheck="false" maxlength="64" placeholder="System name">
+        <button class="btn" type="submit">Search</button>
+      </div>
+      <button class="link quiet" type="button" id="reconHere" hidden>Search around where you are</button>
+    </form>
+    <div class="field">
+      <label for="reconShip">Ship</label>
+      <select id="reconShip"></select>
+    </div>
+    <p class="session-actions">
+      <button class="btn" popovertarget="reconopts" type="button" id="refineBtn">
+        <svg class="i"><use href="#i-sliders"/></svg>Refine<i class="dot" id="refineDot" hidden></i></button>
+      <button class="btn" type="button" id="reconAgain">
+        <svg class="i"><use href="#i-refresh"/></svg>Search again</button>
+    </p>
+    <div id="rfacts"></div>
+  </aside>
+  <main class="main" id="rmain"></main>
+</div>
+
+<div class="layout" id="settingsView" hidden>
+  <aside class="side" aria-label="Settings">
+    <section class="hero">
+      <p class="place"><svg class="i"><use href="#i-sliders"/></svg>Settings</p>
+      <p class="cond">How the network looks and works</p>
+      <p class="sub">Saved in the Anti-Piracy Network folder beside your journals, so they survive a restart and an update.</p>
+    </section>
+    <p><a class="back" href="#" id="settingsBack"><svg class="i"><use href="#i-chev"/></svg><span>Back</span></a></p>
+  </aside>
+  <main class="main">
+    <article class="stack">
+      <header class="stack-head"><div class="stack-id"><h2>Style</h2>
+        <p class="stack-pay">Automatic wears the style of the power you’re pledged to.</p></div></header>
+      <div class="styles" id="styleGrid" role="radiogroup" aria-label="Style"></div>
+    </article>
+    <article class="stack">
+      <header class="stack-head"><div class="stack-id"><h2>Hunt</h2></div></header>
+      <label class="opt">
+        <div><strong>Hand-in station on every mission</strong>
+          <small>Show which station each mission goes back to. Where the pirates are is on each stack.</small></div>
+        <input type="checkbox" class="switch" id="showwhere" role="switch" checked>
+      </label>
+      <label class="opt">
+        <div><strong>Only count kills in the target system</strong>
+          <small>The game only credits kills made there. Turn off only to troubleshoot; it’s back on the next time the app starts.</small></div>
+        <input type="checkbox" class="switch" id="sysmatch" role="switch" checked>
+      </label>
+    </article>
+    <article class="stack" id="miniCard">
+      <header class="stack-head"><div class="stack-id"><h2>Mini window</h2>
+        <p class="stack-pay">A small panel at the top-left of your screen, above the game, so you can read the stack without alt-tabbing. Clicks go straight through it to the game.</p></div></header>
+      <label class="opt">
+        <div><strong>Show the mini window</strong><small id="miniNote">Opens with the app, and closes with it.</small></div>
+        <input type="checkbox" class="switch" id="miniOn" role="switch">
+      </label>
+      <p class="opt-head">What it shows</p>
+      <div class="checks" id="miniFields"></div>
+      <p class="opt-head">Size</p>
+      <div class="segmented card-seg" role="radiogroup" aria-label="Mini window size" data-mini="size">
+        <button type="button" role="radio" data-value="s">Small</button>
+        <button type="button" role="radio" data-value="m">Medium</button>
+        <button type="button" role="radio" data-value="l">Large</button>
+      </div>
+      <p class="opt-head">Opacity <span id="miniOpacityVal"></span></p>
+      <div class="range-row"><input type="range" id="miniOpacity" min="60" max="100" step="5" aria-label="Mini window opacity"></div>
+      <label class="opt">
+        <div><strong>Let clicks through to the game</strong>
+          <small>Off, you can click the mini window itself, which takes the game’s focus.</small></div>
+        <input type="checkbox" class="switch" id="miniClick" role="switch" checked>
+      </label>
+    </article>
+    <article class="stack">
+      <header class="stack-head"><div class="stack-id"><h2>Recon</h2></div></header>
+      <label class="opt">
+        <div><strong>Look up systems online</strong>
+          <small>Recon asks INTRA and EDSM about the systems near you. It sends a position and system names, never your name or your standing.</small></div>
+        <input type="checkbox" class="switch" id="reconOnline" role="switch" checked>
+      </label>
+    </article>
+    <article class="stack">
+      <header class="stack-head"><div class="stack-id"><h2>About</h2></div></header>
+      <dl class="about" id="aboutList"></dl>
+    </article>
+  </main>
 </div>
 
 <div class="layout" id="statsView" hidden>
@@ -800,6 +975,17 @@ function deadline(iso) {
 
 /* ------------------------------------------------------------------ side */
 
+// Where your bounties are worth most: the bonus is money, so it's gold.
+function cashInLine(ci) {
+  const b = ci && ci.best;
+  if (!b) return "";
+  const pct = `+${Math.round(b.rate * 100)}%`;
+  const tip = `Bounties pay ${Math.round(b.rate * 100)}% more cashed in where ${b.power} is ${
+    b.state.toLowerCase()}, whoever you're pledged to (the Powerplay state is as of your last visit there). Merits for bounties come at the kill, so where you cash in doesn't change them.`;
+  return `<p class="cashin" title="${esc(tip)}">Worth <b class="gold">${pct}</b> ${b.here ? "here, at" : "at"} <b>${
+    esc(b.station)}</b>${b.here ? "" : `, ${esc(b.system)} · ${b.ly} ly`}</p>`;
+}
+
 function renderSide(s) {
   const t = s.totals;
   const unsure = s.groups.some((g) => g.uncertain);
@@ -818,6 +1004,10 @@ function renderSide(s) {
     ["Missions", t.missions || "—"],
     ["To collect", t.ready_reward ? `${cr(t.ready_reward)} Cr` : "—"],
   ];
+  // Bounties earned and not yet cashed in, from every system.
+  const ci = s.cash_in;
+  if (ci) facts.push(["To cash in", `${short(ci.total)} Cr`, ` title="${esc(`Bounties not yet cashed in: ${
+    ci.factions.map((f) => `${f.name} ${cr(f.credits)} Cr`).join(", ")}`)}"`]);
 
   $("side").innerHTML = `
     <section class="hero" aria-live="polite">
@@ -830,7 +1020,8 @@ function renderSide(s) {
         : "some counts below can’t be separated in the journal."}</p>` : ""}
     </section>
     <dl class="facts">${facts.map(([k, v, tip]) => `<div><dt>${k}</dt><dd${tip || ""}>${v}</dd></div>`).join("")}</dl>
-    ${s.ready.length ? renderReady(s.ready, s.route) : ""}`;
+    ${cashInLine(ci)}
+    ${s.ready.length ? renderReady(s.ready, s.route, s.groups) : ""}`;
 }
 
 // Imperial Navy rank and Powerplay rank, drawn on the same range grammar as
@@ -892,7 +1083,7 @@ function standingHTML(imp, pp, cb) {
 
 const openStations = new Set();
 
-function renderReady(ready, route) {
+function renderReady(ready, route, groups = []) {
   const byStation = new Map();
   for (const r of ready) {
     const key = `${r.station}|${r.system}`;
@@ -931,7 +1122,19 @@ function renderReady(ready, route) {
           }).join("")}</ul>
         </details>`;
       }).join("")}
+      ${finishedStacks(ready, groups)}
     </section>`;
+}
+
+// Stacks whose missions are all done (none still being hunted) get a link to
+// their report card.
+function finishedStacks(ready, groups) {
+  const hunting = new Set(groups.map((g) => `${g.target_faction}|${g.system}`));
+  const done = [...new Set(ready.map((r) => `${r.target_faction}|${r.target_system}`))]
+    .filter((k) => !hunting.has(k) && !k.startsWith("undefined"));
+  if (!done.length) return "";
+  return `<p class="lede finished">${done.map((k) => `<a class="row-link" href="#statistics/stack/${encodeURIComponent(k)}">${
+    esc(k.split("|")[0])} · report</a>`).join(" · ")}</p>`;
 }
 
 /* ------------------------------------------------------------------ stacks */
@@ -1209,6 +1412,8 @@ function apply(s) {
   $("cmdr").textContent = s.commander || "—";
   $("sysNow").textContent = s.current_system || "—";
   $("sysmatch").checked = s.require_system;
+  if (s.show_where !== undefined && s.show_where !== $("showwhere").checked) applyWhere(s.show_where);
+  $("reconOnline").checked = s.recon_online !== false;
   $("foot").textContent = `Reading ${s.journal_file || "no journal file"} · progress is estimated from the journal`;
   if (s.slots) {
     $("slots").innerHTML = `<b>${s.slots.used}</b>/${s.slots.cap}<span class="word"> missions</span>`;
@@ -1324,9 +1529,11 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
-async function drawSessionCard(s) {
+// A 1600x900 card in the style's colours: the session card and each stack's
+// report card share it, so they read as one set.
+async function drawCard({ eyebrow, dateLine, headline, headlineLabel, byline, rightTitle, bars, rows, figures, footer }) {
   const W = 1600, H = 900, pad = 88;
-  const se = s.session, st = s.style || { small: "Interstellar", main: "Anti-Piracy Network" };
+  const st = (lastState && lastState.style) || { small: "Interstellar", main: "Anti-Piracy Network" };
   const accent = cssVar("--imperial"), deep = cssVar("--imperial-deep"), ground = cssVar("--ground"),
     top = cssVar("--ground-top"), label = cssVar("--label"), label2 = cssVar("--label-2"),
     label3 = cssVar("--label-3"), gold = cssVar("--gold"), hair = "rgba(255, 255, 255, .09)";
@@ -1337,8 +1544,15 @@ async function drawSessionCard(s) {
   const text = (str, x, y, font, color, opts = {}) => {
     c.font = font; c.fillStyle = color; c.textAlign = opts.align || "left"; c.textBaseline = "alphabetic";
     // the narrow space between thousands all but vanishes between big 1s
-    if (parseInt(font.split(" ")[1], 10) >= 30) str = str.replaceAll(NBSP, " ");
+    if (parseInt(font.split(" ")[1], 10) >= 30) str = str.replaceAll(NBSP, " ");
     c.letterSpacing = opts.spacing || "0px"; c.fillText(str, x, y); c.letterSpacing = "0px";
+  };
+  // Long faction names are cut with an ellipsis rather than run into the next column.
+  const fit = (str, font, width) => {
+    c.font = font;
+    if (c.measureText(str).width <= width) return str;
+    while (str.length > 1 && c.measureText(`${str}…`).width > width) str = str.slice(0, -1);
+    return `${str}…`;
   };
 
   // ground, glow, and the emblem as a watermark
@@ -1358,31 +1572,18 @@ async function drawSessionCard(s) {
   if (emblem) c.drawImage(emblem, cx - 34, cy - 34, 68, 68);
   text(st.small.toUpperCase(), pad + 132, 110, "600 17px Saira", label3, { spacing: "5px" });
   text(st.main.toUpperCase(), pad + 132, 142, "500 27px Saira", label, { spacing: "5px" });
-  const start = new Date(se.started);
-  text("SESSION REPORT", W - pad, 110, "600 16px Saira", accent, { align: "right", spacing: "5px" });
-  text(`${start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${clock(se.started)}–${clock(new Date().toISOString())}`,
-       W - pad, 142, "400 22px Saira", label2, { align: "right" });
+  text(eyebrow, W - pad, 110, "600 16px Saira", accent, { align: "right", spacing: "5px" });
+  text(dateLine, W - pad, 142, "400 22px Saira", label2, { align: "right" });
 
-  // the headline: credits earned
-  const bounties = se.bounties_paid ?? se.bounties;
-  const earned = bounties + se.bonds + se.mission_credits;
-  text(crM(earned), pad - 6, 372, "300 168px Saira", label, { spacing: "-4px" });
-  text("credits earned", pad, 424, "600 32px Saira", label);
-  if (s.commander) text(`CMDR ${s.commander}`, pad, 466, "400 24px Saira", label2);
+  // the headline figure
+  text(headline, pad - 6, 372, "300 168px Saira", label, { spacing: "-4px" });
+  text(headlineLabel, pad, 424, "600 32px Saira", label);
+  if (byline) text(fit(byline, "400 24px Saira", 780), pad, 466, "400 24px Saira", label2);
 
-  // ranks, on the right
-  const bars = [];
-  if (s.combat) bars.push([s.combat.title, s.combat.next || "", s.combat.progress / 100, (s.combat.gain || 0) / 100,
-    `${s.combat.progress}%${s.combat.gain ? ` · +${s.combat.gain}% this session` : ""}`]);
-  if (s.imperial && s.imperial.progress != null) bars.push([s.imperial.title, s.imperial.next || "", s.imperial.progress / 100,
-    (s.imperial.pending_gain || 0) / 100, `${s.imperial.progress}%${s.imperial.pending_gain ? ` · +${s.imperial.pending_gain}% after hand-in` : ""}`]);
-  const pp = s.powerplay;
-  if (pp && pp.rank != null) bars.push([`Rank ${pp.rank}`, `Rank ${pp.rank + 1}`,
-    (pp.merits - pp.rank_floor) / Math.max(1, pp.next_rank_at - pp.rank_floor), 0,
-    `${cr(pp.merits)} merits${pp.session ? ` · +${cr(pp.session)} this session` : ""}`]);
+  // the right-hand column: rank bars, or a short ranked list
   const rx = 960, rw = W - pad - rx;
-  text("RANKS", rx, 250, "600 16px Saira", label3, { spacing: "5px" });
-  bars.forEach(([lo, hi, p, pend, line], i) => {
+  text(rightTitle, rx, 250, "600 16px Saira", label3, { spacing: "5px" });
+  (bars || []).forEach(([lo, hi, p, pend, line], i) => {
     const y = 300 + i * 88;
     text(lo, rx, y, "600 20px Saira", label);
     text(hi, rx + rw, y, "400 20px Saira", label2, { align: "right" });
@@ -1393,22 +1594,17 @@ async function drawSessionCard(s) {
     c.fillStyle = fill; roundRect(c, rx, by, Math.max(8, rw * at), 8, 4); c.fill();
     text(line, rx, by + 38, "400 18px Saira", label2);
   });
+  (rows || []).slice(0, 5).forEach(([name, value], i) => {
+    const y = 300 + i * 50;
+    if (i) { c.strokeStyle = hair; c.lineWidth = 1.5; c.beginPath(); c.moveTo(rx, y - 32); c.lineTo(rx + rw, y - 32); c.stroke(); }
+    text(fit(name, "600 20px Saira", rw - 200), rx, y, "600 20px Saira", label);
+    text(value, rx + rw, y, "400 20px Saira", label2, { align: "right" });
+  });
 
-  // the session's figures, in two rows of four
-  const figures = [
-    ["Time played", dur(se.hours)],
-    ["Kills", cr(se.kills)],
-    ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
-    ["Per hour", earned ? `${short(se.credits_per_hour)} Cr` : "—"],
-    ["Bounties", bounties ? `${short(bounties)} Cr` : "—", se.bounties_paid > se.bounties],
-    ["Mission pay", se.mission_credits ? `${short(se.mission_credits)} Cr` : "—"],
-    se.bonds && ["Combat bonds", `${short(se.bonds)} Cr`],
-    se.merits && ["Merits", `+${cr(se.merits)}`],
-    se.crew && ["Crew share", `${short(se.crew)} Cr`],
-  ].filter(Boolean).slice(0, 8);
+  // the figures, in two rows of four
   const col = (W - pad * 2) / 4;
   c.strokeStyle = hair; c.lineWidth = 1.5; c.beginPath(); c.moveTo(pad, 560); c.lineTo(W - pad, 560); c.stroke();
-  figures.forEach(([k, v, isGold], i) => {
+  figures.filter(Boolean).slice(0, 8).forEach(([k, v, isGold], i) => {
     const x = pad + (i % 4) * col, y = 614 + Math.floor(i / 4) * 94;
     text(k, x, y, "400 20px Saira", label2);
     // a boosted bounty is gold, or underlined in styles whose accent is gold already
@@ -1417,22 +1613,84 @@ async function drawSessionCard(s) {
     if (underline) { c.fillStyle = accent; c.fillRect(x, y + 54, c.measureText(v).width, 3); }
   });
 
-  // footer: what was hunted, and the network's mark
+  // footer, and the network's mark
   c.beginPath(); c.moveTo(pad, 790); c.lineTo(W - pad, 790); c.stroke();
-  const hunted = [...new Set((s.groups || []).map((gp) => `${gp.target_faction} · ${gp.system}`))].slice(0, 2).join("   ");
-  if (hunted) text(`Hunting ${hunted}`, pad, 840, "400 20px Saira", label2);
+  if (footer) text(fit(footer, "400 20px Saira", 900), pad, 840, "400 20px Saira", label2);
   text(`${st.power ? `${st.power.toUpperCase()}  ·  ` : ""}ELITE DANGEROUS`, W - pad, 838, "600 15px Saira", label3,
        { align: "right", spacing: "4px" });
   return cv;
 }
 
+function drawSessionCard(s) {
+  const se = s.session;
+  const bounties = se.bounties_paid ?? se.bounties;
+  const earned = bounties + se.bonds + se.mission_credits;
+  const bars = [];
+  if (s.combat) bars.push([s.combat.title, s.combat.next || "", s.combat.progress / 100, (s.combat.gain || 0) / 100,
+    `${s.combat.progress}%${s.combat.gain ? ` · +${s.combat.gain}% this session` : ""}`]);
+  if (s.imperial && s.imperial.progress != null) bars.push([s.imperial.title, s.imperial.next || "", s.imperial.progress / 100,
+    (s.imperial.pending_gain || 0) / 100, `${s.imperial.progress}%${s.imperial.pending_gain ? ` · +${s.imperial.pending_gain}% after hand-in` : ""}`]);
+  const pp = s.powerplay;
+  if (pp && pp.rank != null) bars.push([`Rank ${pp.rank}`, `Rank ${pp.rank + 1}`,
+    (pp.merits - pp.rank_floor) / Math.max(1, pp.next_rank_at - pp.rank_floor), 0,
+    `${cr(pp.merits)} merits${pp.session ? ` · +${cr(pp.session)} this session` : ""}`]);
+  const start = new Date(se.started);
+  const hunted = [...new Set((s.groups || []).map((gp) => `${gp.target_faction} · ${gp.system}`))].slice(0, 2).join("   ");
+  return drawCard({
+    eyebrow: "SESSION REPORT",
+    dateLine: `${start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${clock(se.started)}–${clock(new Date().toISOString())}`,
+    headline: crM(earned), headlineLabel: "credits earned", byline: s.commander ? `CMDR ${s.commander}` : "",
+    rightTitle: "RANKS", bars,
+    figures: [
+      ["Time played", dur(se.hours)],
+      ["Kills", cr(se.kills)],
+      ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
+      ["Per hour", earned ? `${short(se.credits_per_hour)} Cr` : "—"],
+      ["Bounties", bounties ? `${short(bounties)} Cr` : "—", se.bounties_paid > se.bounties],
+      ["Mission pay", se.mission_credits ? `${short(se.mission_credits)} Cr` : "—"],
+      se.bonds && ["Combat bonds", `${short(se.bonds)} Cr`],
+      se.merits && ["Merits", `+${cr(se.merits)}`],
+      se.crew && ["Crew share", `${short(se.crew)} Cr`],
+    ],
+    footer: hunted ? `Hunting ${hunted}` : "",
+  });
+}
+
+// When a stack ran: "12–14 September 2026", or a single day.
+function stackDates(stk) {
+  const a = new Date(stk.start), b = new Date(stk.end || stk.start);
+  const full = { day: "numeric", month: "long", year: "numeric" };
+  if (a.toDateString() === b.toDateString()) return a.toLocaleDateString("en-GB", full);
+  const sameMonth = a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+  return `${a.toLocaleDateString("en-GB", sameMonth ? { day: "numeric" } : { day: "numeric", month: "long" })}–${b.toLocaleDateString("en-GB", full)}`;
+}
+
+function drawStackCard(stk) {
+  return drawCard({
+    eyebrow: "STACK REPORT", dateLine: stackDates(stk),
+    headline: crM(stk.income), headlineLabel: "credits earned, all-in",
+    byline: `${stk.target_faction} · ${stk.system}`,
+    rightTitle: "GIVERS",
+    rows: stk.givers.map((g) => [g.name, `${plural(g.missions, "mission")} · ${cr(g.kills)} kills`]),
+    figures: [
+      ["Kills", cr(stk.kills)],
+      ["Missions", `${stk.completed} of ${stk.missions}`],
+      ["Hunting time", stk.hours ? dur(stk.hours) : "—"],
+      ["Per hour", stk.per_hour ? `${short(stk.per_hour)} Cr` : "—"],
+      ["Per kill", stk.per_kill ? `${short(stk.per_kill)} Cr` : "—"],
+      ["Mission pay", stk.paid ? `${short(stk.paid)} Cr` : "—"],
+      ["Bounties", stk.bounties ? `${short(stk.bounties)} Cr` : "—"],
+      stk.bounty_merits ? ["Merits", `+${cr(stk.bounty_merits)}`] : ["Combat bonds", stk.bonds ? `${short(stk.bonds)} Cr` : "—"],
+    ],
+    footer: lastState && lastState.commander ? `CMDR ${lastState.commander}` : "",
+  });
+}
+
 let exportBlob = null, exportName = "";
-async function openExport() {
-  if (!lastState || !lastState.session) return;
-  const cv = await drawSessionCard(lastState);
+async function openExport(draw, name) {
+  const cv = await draw();
   exportBlob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
-  const day = new Date(lastState.session.started).toISOString().slice(0, 10);
-  exportName = `Anti-Piracy Network session ${day}.png`;
+  exportName = name;
   // the preview is made on first use, so the page never holds an image with no source
   let img = $("exportImg");
   if (!img) {
@@ -1444,7 +1702,14 @@ async function openExport() {
   $("exportSheet").hidden = false;
 }
 document.addEventListener("click", async (ev) => {
-  if (ev.target.closest("#exportImage")) openExport();
+  if (ev.target.closest("#exportImage") && lastState && lastState.session) {
+    openExport(() => drawSessionCard(lastState),
+      `Anti-Piracy Network session ${new Date(lastState.session.started).toISOString().slice(0, 10)}.png`);
+  } else if (ev.target.closest("[data-export-stack]") && lastHistory) {
+    const stk = lastHistory.stacks.find((x) => x.id === ev.target.closest("[data-export-stack]").dataset.exportStack);
+    if (stk) openExport(() => drawStackCard(stk),
+      `Anti-Piracy Network stack ${stk.system} ${(stk.start || "").slice(0, 10)}.png`);
+  }
   else if (ev.target.closest("#exportClose") || ev.target.id === "exportSheet") $("exportSheet").hidden = true;
   else if (ev.target.closest("#exportSave") && exportBlob) {
     const a = document.createElement("a"); a.href = $("exportImg").src; a.download = exportName; a.click();
@@ -1525,7 +1790,51 @@ function drawChart() {
 }
 addEventListener("resize", () => { if (view === "stats") drawChart(); });
 
+/* ---- A stack of its own: #statistics/stack/<id>. A "<faction>|<system>" key
+   opens the latest stack against that faction there (Hunt's "Report" link). */
+const stackLink = (stk) => `#statistics/stack/${encodeURIComponent(stk.id)}`;
+function renderStackPage(h, key) {
+  const stk = h.stacks.find((x) => x.id === key) ||
+    h.stacks.find((x) => `${x.target_faction}|${x.system}` === key);
+  const back = `<p><a class="back" href="#statistics">${icon("chev", "i")}Statistics</a></p>`;
+  if (!stk) {
+    $("sside").innerHTML = back;
+    $("smain").innerHTML = reconEmpty("No such stack", "It may be older than your oldest journal file, or still being read. Open it again from Every stack.");
+    return;
+  }
+  $("sside").innerHTML = `${back}
+    <section class="hero">
+      <p class="place">${icon("target")}${esc(stk.target_faction)}</p>
+      <p class="big">${crM(stk.income)}</p>
+      <p class="cond">credits earned, all-in</p>
+      <p class="sub">${esc(stk.system)} · ${stackDates(stk)}${stk.in_progress ? " · in progress" : ""}</p>
+    </section>
+    ${factsHTML([
+      ["Kills", cr(stk.kills)],
+      ["Missions", `${stk.completed} of ${stk.missions}`, ` title="Handed in, of those taken"`],
+      ["Hunting time", stk.hours ? dur(stk.hours) : "—"],
+      ["Per hour", stk.per_hour ? `${short(stk.per_hour)} Cr` : "—", ` title="${cr(stk.per_hour)} Cr"`],
+      ["Per kill", stk.per_kill ? `${cr(stk.per_kill)} Cr` : "—"],
+      ["Kill cost", `${cr(stk.kill_cost)} kills`, ` title="The biggest giver's total: what the stack cost in kills"`],
+      ["Mission pay", stk.paid ? `${short(stk.paid)} Cr` : "—", stk.paid ? ` title="${cr(stk.paid)} Cr"` : ""],
+      ["Bounties", stk.bounties ? `${short(stk.bounties)} Cr` : "—", stk.bounties ? ` title="${cr(stk.bounties)} Cr"` : ""],
+      ["Combat bonds", stk.bonds ? `${short(stk.bonds)} Cr` : "—", stk.bonds ? ` title="${cr(stk.bonds)} Cr"` : ""],
+      ["Merits", stk.bounty_merits ? `+${cr(stk.bounty_merits)}` : "—", ` title="Awarded for this stack's bounty kills"`],
+      ["Materials", stk.materials ? cr(stk.materials) : "—", ` title="Collected from wrecks there, and paid as its missions' rewards"`],
+    ])}
+    <p class="session-actions"><button class="btn prime" type="button" data-export-stack="${esc(stk.id)}">Export image</button></p>`;
+  $("smain").innerHTML =
+    card("Givers", barList(stk.givers.map((g) => ({ name: g.name, count: g.kills, missions: g.missions })),
+      (r) => `${cr(r.count)} kills`, (r) => plural(r.missions, "mission")),
+      "Each giver's missions and the kills they asked for. The stack cost the biggest giver's total.") +
+    `<div class="cards2">` +
+    card("Ships killed", barList(stk.victims)) +
+    card("Your ships", barList(stk.flew), "Kills made in each of your ships.") +
+    `</div>`;
+}
+
 function renderStats(h) {
+  if (sub && sub.startsWith("stack/")) { renderStackPage(h, sub.slice(6)); return; }
   const t = h.totals, st = h.stats || {};
   const m = st.missions || {};
   const best = (s, what) => s ? `
@@ -1567,7 +1876,7 @@ function renderStats(h) {
       : s.failed ? `<span class="lost">${s.failed} failed</span>` : "";
     const bonds = s.bonds ? ` · ${colM(s.bonds)} in combat bonds` : "";
     return `<li>
-      <span class="name"><b>${esc(s.target_faction)}</b>
+      <span class="name"><b><a class="row-link" href="${stackLink(s)}">${esc(s.target_faction)}</a></b>
         <small>${dayMonth(s.start)} · ${esc(s.system)} · ${plural(s.missions, "mission")} from ${plural(s.providers, "provider")}${bonds}${note ? " · " + note : ""}</small></span>
       <span data-label="Kills">${cr(s.kills)}</span>
       <span data-label="Missions">${s.paid ? colM(s.paid) : none}</span>
@@ -1588,11 +1897,33 @@ function renderStats(h) {
       ["All missions taken", cr(m.all_accepted || 0)], ["All handed in", cr(m.all_completed || 0)],
     ])}</div>`) +
     card("Crew", barList(st.crew_by_member, (r) => `${colM(r.credits)} Cr`), "What each NPC crew member has been paid.") +
+    materialsCards(st.materials) +
     `</div>` +
     card("Every stack", `<div class="list-head"><span>Stack</span><span>Kills</span><span>Missions</span><span>Bounties</span><span>All-in / kill</span><span class="per-hour">All-in / hour</span></div>
       <ol class="hist">${h.stacks.map(stackRow).join("")}</ol>`,
       "Mission pay is what was actually paid in credits. Bounties are every bounty earned in the system while the stack ran. All-in adds mission pay, bounties and any combat bonds.");
   drawChart();
+}
+
+/* ---- Materials: earned from wrecks and as mission rewards, and which ones
+   are nearly full (worth taking credits instead of, as a mission reward) */
+const gradeTag = (r) => (r.grade ? `G${r.grade}` : "");
+function materialsCards(m) {
+  if (!m || !m.earned) return "";
+  const full = m.near_cap || [];
+  return card("Materials earned", `<div class="card-body">${factsHTML([
+      ["Earned", cr(m.earned)], ["From wrecks", cr(m.collected)],
+      ["Mission rewards", cr(m.missions)],
+      ["Grade 5", cr((m.by_grade.find((g) => g.grade === 5) || {}).count || 0), ` title="The rarest grade, of which you can hold 100 each"`],
+    ])}</div>${barList(m.top, (r) => cr(r.count), gradeTag)}`,
+    "Collected from wrecks, or paid as mission rewards. G is the grade: you can hold 300 of a grade 1 material, down to 100 of grade 5.") +
+    card("Near their cap", full.length
+      ? `<ol class="provider-list">${full.map((r) => `<li><span>${esc(r.name)}<span class="states">${gradeTag(r)} · ${esc(r.kind || "")}</span></span>
+          <span class="${r.count >= r.cap ? "lost" : ""}">${cr(r.count)} of ${cr(r.cap)}</span></li>`).join("")}</ol>`
+      : '<p class="card-body dim">None of your materials is near its cap.</p>',
+      full.length ? "Full, or nearly: take credits instead of these as mission rewards." +
+        (m.inventory_at ? ` Counted from your last log-in (${ago(m.inventory_at).toLowerCase()}) and everything since.` : "")
+      : "");
 }
 
 /* ---- History: every session, each with a page of its own */
@@ -1612,7 +1943,9 @@ function renderHistory(h) {
     ["Kills", cr(s.kills)], ["Per hour", s.hours >= 0.25 ? `${short(earned / s.hours)} Cr` : "—"],
     ["Bounties", s.bounties ? short(s.bounties) : "—"], ["Mission pay", s.paid ? short(s.paid) : "—"],
     ...(s.bonds ? [["Combat bonds", short(s.bonds)]] : []),
-    ["Merits", s.merits ? `+${cr(s.merits)}` : "—"], ["Crew share", s.crew ? short(s.crew) : "—"],
+    ["Merits", s.merits ? `+${cr(s.merits)}` : "—"],
+    ...(s.bounty_merits ? [["From bounties", `+${cr(s.bounty_merits)}`]] : []),
+    ["Crew share", s.crew ? short(s.crew) : "—"],
     ["Missions taken", cr(s.accepted || 0)], ["Handed in", cr(s.massacres || 0)],
     ...(s.deaths ? [["Deaths", cr(s.deaths)]] : []),
   ];
@@ -1631,9 +1964,11 @@ function renderHistory(h) {
       ${card("Kills by ship type", barList(s.by_ship))}
       ${card("Systems", barList(s.by_system))}
       ${card("Your ships", barList(s.flew))}
+      ${s.materials && s.materials.length ? card("Materials", barList(s.materials, (r) => cr(r.count), gradeTag),
+        "Collected from wrecks, or paid as mission rewards.") : ""}
     </div>
     ${s.stacks && s.stacks.length ? card("Stacks worked", `<ol class="provider-list">${s.stacks.map((st) => `<li>
-      <span>${esc(st.target_faction)}<span class="states">${esc(st.system)}</span></span>
+      <span><a class="row-link" href="${stackLink(st)}">${esc(st.target_faction)}</a><span class="states">${esc(st.system)}</span></span>
       <span class="states">${plural(st.missions, "mission")}${st.in_progress ? " · in progress" : ""}</span></li>`).join("")}</ol>`) : ""}`;
 }
 
@@ -1646,31 +1981,255 @@ async function loadHistory() {
   } catch (err) { /* the hunt page shows lost contact */ }
 }
 
-const VIEWS = { stacks: "stackView", commander: "commanderView", stats: "statsView", history: "historyView" };
+/* ---- Recon: where to stack next. It goes online (INTRA and EDSM) unless
+   Settings says not to; your standing is joined in by the app, on your PC. */
+let lastRecon = null, reconTimer = null, reconSig = null, reconFleetSig = null;
+const openSources = new Set();
+// Bounties earned in these powers' systems pay more cashed in, pledged or not.
+const BONUS_POWERS = new Set(["A. Lavigny-Duval", "Yuri Grom"]);
+const SIDE_WORD = { any: "", Empire: "Imperial", Federation: "Federal", Alliance: "Alliance", Independent: "independent" };
+const RECON_DEFAULTS = { allegiance: "any", power: "any", radius: 100, sort: "givers" };
+const lsText = (n) => `${cr(Math.round(n))} ls`;
+const sinceWords = (epoch) => {
+  const min = Math.round((Date.now() / 1000 - epoch) / 60);
+  return min < 1 ? "just now" : min < 60 ? `${min} min ago` : `${Math.round(min / 60)} h ago`;
+};
+
+async function loadRecon(params = "") {
+  clearTimeout(reconTimer);
+  try {
+    const res = await fetch(`/api/recon${params ? `?${params}` : ""}`, { cache: "no-store" });
+    lastRecon = await res.json();
+    if (view === "recon") renderRecon(lastRecon);
+  } catch (err) { /* the hunt page shows lost contact */ }
+  if (view !== "recon") return;
+  const st = lastRecon && lastRecon.result && lastRecon.result.status;
+  const busy = st === "searching" || st === "naming";
+  // An error waits for you (Search again) rather than retrying on its own.
+  reconTimer = setTimeout(() => loadRecon(st === "error" ? "" : "start=1"), busy ? 1200 : 20000);
+}
+
+function syncReconControls(r) {
+  const p = r.prefs;
+  const input = $("reconSystem");
+  if (document.activeElement !== input) input.value = p.ref || "";
+  input.placeholder = r.here ? `${r.here} (where you are)` : "System name";
+  $("reconHere").hidden = !p.ref;
+  const fleetSig = JSON.stringify([r.fleet, p.ship]);
+  const ship = $("reconShip");
+  if (fleetSig !== reconFleetSig && document.activeElement !== ship) {
+    reconFleetSig = fleetSig;
+    const flying = r.fleet.find((s) => s.current);
+    const label = (s) => (s.name ? `${s.name} · ${s.model}` : s.model);
+    ship.innerHTML = `<option value="">${flying ? `${esc(label(flying))} (flying)` : "The ship you're flying"}</option>` +
+      r.fleet.filter((s) => !s.current).map((s) => `<option value="${s.id}">${esc(label(s))}</option>`).join("");
+    ship.value = p.ship != null && r.fleet.some((s) => s.id === p.ship && !s.current) ? String(p.ship) : "";
+  }
+  const power = $("reconPower");
+  if (power.options.length === 1 && r.powers) {
+    power.insertAdjacentHTML("beforeend", r.powers.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join(""));
+  }
+  if (document.activeElement !== power) power.value = p.power;
+  document.querySelectorAll("#reconopts [data-pref]").forEach((group) =>
+    group.querySelectorAll("button").forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.value === String(p[group.dataset.pref])))));
+  $("refineDot").hidden = Object.entries(RECON_DEFAULTS).every(([k, v]) => p[k] === v);
+}
+
+function reconEmpty(title, text, button = "") {
+  return `<section class="empty"><h2>${title}</h2><p>${text}</p>${button ? `<p>${button}</p>` : ""}</section>`;
+}
+
+function targetCard(t, r) {
+  const side = SIDE_WORD[r.prefs.allegiance];
+  const byName = new Map(t.givers.map((g) => [g.name, g]));
+  const meta = [];
+  if (t.pirates.length) meta.push(`<span>${icon("target")}${esc(t.pirates.join(", "))}</span>`);
+  meta.push(`<span>${t.distance.toFixed(1)} ly away</span>`);
+  if (t.power) {
+    // Gold is money (a bounty bonus, whoever you're pledged to); your own
+    // power's space wears the style's colour.
+    const yours = t.power === r.pledged;
+    const tip = [yours && "Held by your power",
+      BONUS_POWERS.has(t.power) && `Bounties earned in ${t.power}’s systems pay 20% to 40% more cashed in, whoever you’re pledged to`]
+      .filter(Boolean).join(". ");
+    meta.push(`<span class="${BONUS_POWERS.has(t.power) ? "gold" : yours ? "yours" : ""}"${tip ? ` title="${esc(tip)}"` : ""}>${
+      esc(t.power)}${yours ? " · yours" : ""}</span>`);
+  }
+  const res = t.res.haz ? "Hazardous RES" : t.res.hi ? "High RES" : t.res.med ? "Medium RES" : t.res.low ? "Low RES" : "";
+  if (res) meta.push(`<span>${res}</span>`);
+  if (t.cnb) meta.push("<span>Compromised nav beacon</span>");
+  if (t.stacked) meta.push(`<span>You’ve stacked here · ${plural(t.stacked, "mission")}</span>`);
+
+  const says = [];
+  const counted = t.givers.filter((g) => g.counted && g.weight > 0);
+  const liked = ["Allied", "Friendly"].map((band) => [band, counted.filter((g) => g.standing === band).length])
+    .filter(([, n]) => n);
+  if (liked.length) {
+    const ratio = t.score ? t.pay / t.score : 1;
+    says.push(`<p class="say good">${icon("check")}<span>You’re ${liked.map(([band, n]) =>
+      `<b>${band}</b> with ${n}`).join(" and ")} of them${ratio >= 1.15
+      ? ` · about ${ratio.toFixed(1)}× a stranger’s pay per kill, as your journal shows` : ""}</span></p>`);
+  }
+  if (t.pirates.length > 1) {
+    says.push(`<p class="say warn">${icon("alert")}<span>Missions are split between <b>${t.pirates.length}</b> pirate factions here</span></p>`);
+  }
+  const held = {};
+  t.givers.filter((g) => g.counted && !g.shunned).forEach((g) => g.states.forEach((st) => {
+    if ((r.weights[st] ?? 1) < 1) (held[st] = held[st] || []).push(g.name);
+  }));
+  Object.entries(held).forEach(([st, names]) => says.push(`<p class="say warn">${icon("alert")}<span>In ${
+    esc(stateWords([st]).toLowerCase())}: ${esc(names.join(", "))} · ${r.weights[st] === 0
+    ? (names.length === 1 ? "counts for nothing" : "count for nothing") : (names.length === 1 ? "counts for less" : "count for less")}</span></p>`));
+  const coming = t.givers.filter((g) => g.counted && g.pending.includes("Election") && !g.states.includes("Election"));
+  if (coming.length) says.push(`<p class="say warn">${icon("clock")}<span>Election coming: ${esc(coming.map((g) => g.name).join(", "))}</span></p>`);
+  const shunned = t.givers.filter((g) => g.shunned);
+  if (shunned.length) says.push(`<p class="say warn">${icon("alert")}<span>${esc(shunned.map((g) => g.name).join(", "))} ${
+    shunned.length === 1 ? "dislikes" : "dislike"} you: no missions</span></p>`);
+  const unknown = t.givers.filter((g) => g.counted && !g.states_known).length;
+  if (unknown) says.push(`<p class="say">${icon("clock")}<span>${unknown === 1 ? "One giver’s" : `${unknown} givers’`} states unreported for 3 days or more</span></p>`);
+  if (t.unnamed) says.push(`<p class="say">${icon("alert")}<span>EDSM couldn’t name every system here, so there may be more givers</span></p>`);
+
+  const sources = t.sources.map((src) => {
+    const key = `${t.system}|${src.system}`;
+    const list = src.givers.map((n) => byName.get(n)).filter(Boolean);
+    const n = list.filter((g) => g.counted && g.weight > 0).length;
+    const port = src.starport_ls != null ? `Starport ${lsText(src.starport_ls)}`
+      : src.outpost_ls != null ? `Outpost only · ${lsText(src.outpost_ls)}` : "No port";
+    const rows = list.map((g) => {
+      const warn = g.states.some((st) => (r.weights[st] ?? 1) < 1);
+      const elsewhere = g.sources.length > 1 && g.sources[0] !== src.system ? ` · counted at ${g.sources[0]}` : "";
+      return `<li class="${g.counted && g.weight > 0 ? "" : "off"}"><span>${esc(g.name)}${standingWord(g)}</span>
+        <span class="r states${warn ? " warn" : ""}">${esc(stateWords(g.states) || g.allegiance)}${esc(elsewhere)}</span></li>`;
+    }).join("");
+    return `<details class="station" data-src="${esc(key)}"${openSources.has(key) ? " open" : ""}>
+      <summary>${icon("chev", "i chev")}<span><span class="st-name">${esc(src.system)}</span>
+        <span class="st-sys">${port} · ${src.distance.toFixed(1)} ly from ${esc(r.result.query.ref)}</span></span>
+        <span class="count">${src.pending ? "naming…" : src.failed ? "not named" : `<b>${n}</b> ${n === 1 ? "giver" : "givers"}`}</span></summary>
+      <ul>${rows || '<li class="off"><span>No givers named here</span></li>'}</ul></details>`;
+  }).join("");
+
+  return `<article class="stack">
+    <header class="stack-head">
+      <div class="stack-id"><h2>${esc(t.system)}</h2><div class="stack-meta">${meta.join("")}</div></div>
+      <div class="stack-num"><b>${t.count}</b><span>${side ? `${side} ` : ""}${t.count === 1 ? "giver" : "givers"}</span></div>
+    </header>
+    ${says.length ? `<div class="says">${says.join("")}</div>` : ""}
+    <div class="recon-src">${sources}</div>
+  </article>`;
+}
+
+function renderRecon(r) {
+  syncReconControls(r);
+  const res = r.result, p = r.prefs;
+  const sig = JSON.stringify([res, r.online, r.ref, r.ship && r.ship.id, p.allegiance, p.sort]);
+  if (sig === reconSig) return;
+  reconSig = sig;
+
+  const ready = res ? res.targets.filter((t) => !t.pending) : [];
+  const waiting = res ? res.targets.length - ready.length : 0;
+  const busy = res && (res.status === "searching" || res.status === "naming");
+  const where = (res && res.query && res.query.ref) || r.ref;
+  const e = (r.weights || {}).Election, m = (r.measured || {}).Election;
+  const note = `Ranked by givers: factions near one pirate faction that can give massacre missions against it, each counted once. ${
+    e === 0 ? `Givers in an election count for nothing${m ? `: none of the ${m.n} you met in one gave you a massacre mission` : ""}. ` : ""}Your standing decides ties.`;
+  $("rhero").innerHTML = `
+    <p class="place">${icon("pin")}${esc(where || "Nowhere yet")}</p>
+    <p class="big">${r.online && res && res.status !== "error" ? ready.length : "—"}</p>
+    <p class="cond" title="${esc(note)}">${!r.online ? "Recon is off" : busy && res.status === "searching" ? "Asking INTRA…"
+      : `stacking ${ready.length === 1 ? "spot" : "spots"}${busy ? " so far" : ""}`}</p>
+    <p class="sub">within ${p.radius} ly${r.ship && r.ship.large ? " · large pads" : ""}</p>`;
+  $("rfacts").innerHTML = r.online && res && res.started ? factsHTML([
+    ["Searched", res.finished ? sinceWords(res.finished) : "now"],
+    ["Named", res.to_check ? `${res.checked - res.failed} of ${res.to_check}` : "—",
+     res.failed ? ` title="${res.failed} systems EDSM couldn’t answer for"` : ""],
+  ]) : "";
+
+  let main;
+  if (!r.online) {
+    main = reconEmpty("Recon is off", "Recon finds places to stack by asking <b>INTRA</b> and <b>EDSM</b> about the systems near you. It sends a position and system names, never your name or your standing. It’s switched off under <b>Settings</b>.",
+      '<button class="btn prime" type="button" id="reconTurnOn">Turn Recon on</button>');
+  } else if (!res || !res.query) {
+    main = reconEmpty("Where to look?", "Recon searches around the system you’re in. Log in to Elite Dangerous, or type a system name on the left.");
+  } else if (res.status === "error") {
+    const q = res.query.ref;
+    main = res.error === "unknown system"
+      ? reconEmpty(`No system called “${esc(q)}”`, "Check the spelling. EDSM knows every system someone has visited with a tool that reports it.")
+      : reconEmpty(`${res.error === "edsm" ? "EDSM" : "INTRA"} didn’t answer`, `Recon couldn’t reach ${res.error === "edsm" ? "edsm.net" : "iniv.space"} just now. Try again in a minute.`,
+        '<button class="btn" type="button" data-recon-again>Search again</button>');
+  } else if (!ready.length && busy) {
+    main = reconEmpty(res.status === "searching" ? "Asking INTRA…" : "Naming factions…",
+      `Looking for pirate factions within ${p.radius} ly of ${esc(res.query.ref)} with mission givers around them. The first search here takes a minute; after that it’s quick.`);
+  } else if (!ready.length) {
+    main = reconEmpty(`Nothing within ${p.radius} ly`, `No system near ${esc(res.query.ref)} has givers with exactly one pirate faction in reach${
+      p.power !== "any" ? ` in ${esc(p.power)}’s space` : ""}${r.ship && r.ship.large ? " and a starport for large pads" : ""}. Search further out, or change what you’re looking for, under <b>Refine</b>.`);
+  } else {
+    main = ready.map((t) => targetCard(t, r)).join("");
+  }
+  const foot = r.online && res && res.query ? `<p class="foot">${busy && waiting ? `Naming the factions of ${plural(waiting, "more target")}… · ` : ""}Targets and sources from <a href="https://iniv.space/intra/" target="_blank" rel="noopener">INTRA</a>, factions and states from <a href="https://www.edsm.net/" target="_blank" rel="noopener">EDSM</a>. The same places serve Deserters and Infected missions: they target the same pirate factions.</p>` : "";
+  $("rmain").innerHTML = main + foot;
+}
+
+document.addEventListener("toggle", (ev) => {
+  const key = ev.target.dataset && ev.target.dataset.src;
+  if (key) (ev.target.open ? openSources.add(key) : openSources.delete(key));
+}, true);
+$("reconRef").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  $("reconSystem").blur();
+  loadRecon(`ref=${encodeURIComponent($("reconSystem").value.trim())}`);
+});
+$("reconHere").addEventListener("click", () => { $("reconSystem").value = ""; loadRecon("ref="); });
+$("reconShip").addEventListener("change", (ev) => loadRecon(`ship=${encodeURIComponent(ev.target.value)}`));
+$("reconPower").addEventListener("change", (ev) => loadRecon(`power=${encodeURIComponent(ev.target.value)}`));
+document.querySelectorAll("#reconopts [data-pref] button").forEach((b) => b.addEventListener("click", () =>
+  loadRecon(`${b.closest("[data-pref]").dataset.pref}=${encodeURIComponent(b.dataset.value)}`)));
+$("reconAgain").addEventListener("click", () => loadRecon("again=1"));
+async function setReconOnline(on) {
+  await fetch(`/api/config?recon=${on ? "1" : "0"}`);
+  $("reconOnline").checked = on;
+  if (view === "recon") loadRecon("start=1");
+}
+$("reconOnline").addEventListener("change", (ev) => setReconOnline(ev.target.checked));
+document.addEventListener("click", (ev) => {
+  if (ev.target.closest("#reconTurnOn")) setReconOnline(true);
+  if (ev.target.closest("[data-recon-again]")) loadRecon("again=1");
+});
+
+const VIEWS = { stacks: "stackView", commander: "commanderView", stats: "statsView", history: "historyView",
+  recon: "reconView", settings: "settingsView" };
+const VIEW_NAMES = { stacks: "Hunt", commander: "Commander", stats: "Statistics", history: "History", recon: "Recon" };
+let backTo = "stacks";     // where Settings returns to
 function setView(v, subpage = null, push = true) {
   if (v === "journal") v = "history";
   if (!VIEWS[v]) v = "stacks";
+  if (v === "settings" && view !== "settings") backTo = view;
   view = v; sub = subpage;
-  document.querySelectorAll(".segmented button").forEach((b) =>
+  document.querySelectorAll(".viewbar .segmented button").forEach((b) =>
     b.setAttribute("aria-selected", String(b.dataset.view === v)));
   Object.entries(VIEWS).forEach(([k, id]) => { $(id).hidden = k !== v; });
-  try { localStorage.setItem("view", v); } catch (err) { /* private mode */ }
+  if (v === "settings") $("settingsBtn").setAttribute("aria-current", "page");
+  else $("settingsBtn").removeAttribute("aria-current");
+  // Settings is a detour: the app reopens on the page you were using.
+  if (v !== "settings") try { localStorage.setItem("view", v); } catch (err) { /* private mode */ }
   if (push) history.replaceState(null, "", v === "stacks" ? location.pathname
     : `#${v === "stats" ? "statistics" : v}${subpage ? `/${encodeURIComponent(subpage)}` : ""}`);
+  if (v === "settings") openSettings();
   if (v === "stats" || v === "history") {
     if (lastHistory) (v === "stats" ? renderStats : renderHistory)(lastHistory);
     loadHistory();
   }
   if (v === "commander" && lastState) renderCommander(lastState);
+  if (v === "recon") { if (lastRecon) renderRecon(lastRecon); loadRecon("start=1"); }
   scrollTo(0, 0);
 }
 function route() {
   const [page, ...rest] = location.hash.replace(/^#/, "").split("/");
-  const v = { "": "stacks", hunt: "stacks", commander: "commander", statistics: "stats", history: "history", journal: "history" }[page];
+  const v = { "": "stacks", hunt: "stacks", commander: "commander", statistics: "stats", history: "history", journal: "history", recon: "recon", settings: "settings" }[page];
   setView(v || "stacks", rest.length ? decodeURIComponent(rest.join("/")) : null, false);
 }
 addEventListener("hashchange", route);
-document.querySelectorAll(".segmented button").forEach((b) =>
+document.querySelectorAll(".viewbar .segmented button").forEach((b) =>
   b.addEventListener("click", () => setView(b.dataset.view)));
 setInterval(() => { if (view === "stats" || view === "history") loadHistory(); }, 30000);
 
@@ -1710,15 +2269,77 @@ $("refresh").addEventListener("click", async () => {
   }, 1200);
 });
 
+// Saved in config.json with the other settings (it used to live in the
+// browser's storage; an old "off" there is carried over once).
 function applyWhere(on) {
   document.body.classList.toggle("hide-where", !on);
   $("showwhere").checked = on;
-  try { localStorage.setItem("showWhere", on ? "1" : "0"); } catch (err) { /* private mode */ }
 }
-let wherePref = true;
-try { wherePref = localStorage.getItem("showWhere") !== "0"; } catch (err) { /* private mode */ }
-applyWhere(wherePref);
-$("showwhere").addEventListener("change", (ev) => applyWhere(ev.target.checked));
+try {
+  if (localStorage.getItem("showWhere") === "0") fetch("/api/config?show_where=0");
+  localStorage.removeItem("showWhere");
+} catch (err) { /* private mode */ }
+$("showwhere").addEventListener("change", (ev) => {
+  applyWhere(ev.target.checked);
+  fetch(`/api/config?show_where=${ev.target.checked ? "1" : "0"}`);
+});
+
+// Settings: a page of its own. The toolbar button opens it (or goes back),
+// as do Back and Esc.
+async function openSettings() {
+  $("settingsBack").querySelector("span").textContent = `Back to ${VIEW_NAMES[backTo] || "Hunt"}`;
+  try {
+    const cfg = await (await fetch("/api/config", { cache: "no-store" })).json();
+    const a = cfg.about || {};
+    $("aboutList").innerHTML = [
+      ["Journal folder", a.journal_dir], ["Your settings", a.data_dir],
+      ["Window profile", a.window_profile],
+    ].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
+    renderMiniCard(cfg);
+  } catch (err) { /* the hunt page shows lost contact */ }
+}
+// The mini window's card: what the app says it has, and each change saved
+// (and applied to the open window) at once.
+const MINI_LABELS = { kills: "Kills to go", progress: "Stack progress", payout: "Next payout",
+  target: "Target check", wanted: "Wanted or fine", session: "Credits an hour", slots: "Mission slots" };
+function renderMiniCard(cfg) {
+  const m = cfg.mini || {};
+  $("miniOn").checked = !!m.on;
+  $("miniClick").checked = m.click_through !== false;
+  $("miniOpacity").value = m.opacity || 90;
+  $("miniOpacityVal").textContent = `${m.opacity || 90}%`;
+  document.querySelectorAll("[data-mini] button").forEach((b) =>
+    b.setAttribute("aria-checked", String(b.dataset.value === (m.size || "m"))));
+  $("miniFields").innerHTML = (cfg.mini_fields || []).map((f) => `<label>
+    <input type="checkbox" value="${f}"${(m.fields || []).includes(f) ? " checked" : ""}>${MINI_LABELS[f] || f}</label>`).join("");
+  const note = $("miniNote");
+  $("miniCard").classList.toggle("unavailable", !cfg.mini_available);
+  note.classList.toggle("warn", cfg.mini_available && cfg.game_display === "fullscreen");
+  note.textContent = !cfg.mini_available
+    ? "Only on Windows, and not when the app runs without a window (--no-browser)."
+    : cfg.game_display === "fullscreen"
+      ? "Elite is set to Fullscreen, and nothing can show over that. Set Fullscreen to Borderless in the game’s Graphics options."
+      : "Opens with the app, and closes with it.";
+}
+const saveMini = (param, value) => fetch(`/api/config?${param}=${encodeURIComponent(value)}`);
+$("miniOn").addEventListener("change", (ev) => saveMini("mini", ev.target.checked ? "1" : "0"));
+$("miniClick").addEventListener("change", (ev) => saveMini("mini_click", ev.target.checked ? "1" : "0"));
+$("miniOpacity").addEventListener("input", (ev) => { $("miniOpacityVal").textContent = `${ev.target.value}%`; });
+$("miniOpacity").addEventListener("change", (ev) => saveMini("mini_opacity", ev.target.value));
+$("miniFields").addEventListener("change", () => saveMini("mini_fields",
+  [...$("miniFields").querySelectorAll("input:checked")].map((i) => i.value).join(",")));
+document.querySelectorAll("[data-mini] button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-mini] button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+  saveMini("mini_size", b.dataset.value);
+}));
+
+$("settingsBtn").addEventListener("click", () => setView(view === "settings" ? backTo : "settings"));
+$("settingsBack").addEventListener("click", (ev) => { ev.preventDefault(); setView(backTo); });
+document.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape" || view !== "settings" || !$("exportSheet").hidden) return;
+  if (document.querySelector(":popover-open")) return;
+  setView(backTo);
+});
 
 $("sysmatch").addEventListener("change", async (ev) => {
   await fetch("/api/config?require_system=" + (ev.target.checked ? "1" : "0"));

@@ -15,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -31,10 +32,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-# Where your own files live (config.json, offsets.json, an emblem of your own):
-# beside stacker.py, or beside the .exe when running the packaged app.
+import materials
+import miniwin
+import recon
+
+# Where the app itself is: beside stacker.py, or beside the .exe. A config.json
+# here can say where the journal folder is, if it isn't where Elite puts it.
 FROZEN = getattr(sys, "frozen", False)
 APP_DIR = Path(sys.executable if FROZEN else __file__).resolve().parent
+# Where your own files live (settings, hand corrections, Recon's cache, an
+# emblem of your own): a folder of their own inside the journal folder, set by
+# use_data_dir() once that's found. Until then, and if it can't be written,
+# beside the app.
+DATA_DIR = APP_DIR
 # Where the files that ship with the app live (dashboard.html, fonts/, the
 # emblem). The packaged .exe unpacks them to a temporary folder at start.
 RES_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
@@ -120,7 +130,7 @@ def mission_kind(target_type):
 STYLES = {
     "ald": ("A. Lavigny-Duval", "Her Imperial Majesty’s", "Anti-Piracy Network",
             "#b890ff", "#7a4ddc", "#140e1f", "#ffffff", "gold"),
-    "aisling": ("Aisling Duval", "Her Highness’", "Anti-Piracy Network",
+    "aisling": ("Aisling Duval", "Her Imperial Highness’", "Anti-Piracy Network",
                 "#6cc6f2", "#1f7fb4", "#0b1620", "#ffffff", "gold"),
     "torval": ("Zemina Torval", "Torval Mining Ltd’s", "Anti-Piracy Network",
                "#88a8ff", "#3a61d4", "#0d1224", "#ffffff", "gold"),
@@ -146,9 +156,69 @@ STYLES = {
 POWER_STYLE = {v[0]: k for k, v in STYLES.items() if v[0]}
 
 
-def load_config():
+_config_cache = {"mtime": None, "value": {}}
+
+
+def use_data_dir(journal_dir):
+    """Keep your own files in "Anti-Piracy Network" inside the journal folder,
+    beside the journals themselves (never touching them), whatever folder the
+    app was started from. Files from older versions, which kept them beside the
+    app and Recon's cache in AppData, are moved there the first time."""
+    global DATA_DIR
+    target = Path(journal_dir) / APP_NAME
     try:
-        return json.loads((APP_DIR / "config.json").read_text(encoding="utf-8")) or {}
+        target.mkdir(exist_ok=True)
+    except OSError:
+        return DATA_DIR                          # can't write there: stay beside the app
+    DATA_DIR = target
+    _config_cache.update(mtime=None, value={})
+    moved = []
+    for name in ("config.json", "offsets.json"):
+        old, new = APP_DIR / name, target / name
+        if old.resolve() == new.resolve() or not old.is_file() or new.exists():
+            continue
+        try:
+            text = old.read_text(encoding="utf-8")
+            new.write_text(text, encoding="utf-8")
+            keep = None
+            if name == "config.json":
+                # Where the journals are has to stay beside the app: it's how
+                # the app finds this folder in the first place.
+                journal = (json.loads(text) or {}).get("journal_dir")
+                keep = json.dumps({"journal_dir": journal}, indent=2) if journal else None
+            old.write_text(keep, encoding="utf-8") if keep else old.unlink()
+            moved.append(name)
+        except (OSError, ValueError, TypeError):
+            continue
+    base = os.environ.get("LOCALAPPDATA")
+    old_cache = Path(base) / APP_FILE / "recon" / "cache.json" if base else None
+    if old_cache and old_cache.is_file() and not (target / "Recon" / "cache.json").exists():
+        try:
+            (target / "Recon").mkdir(exist_ok=True)
+            shutil.move(str(old_cache), str(target / "Recon" / "cache.json"))
+            old_cache.parent.rmdir()
+            moved.append("Recon's cache")
+        except OSError:
+            pass
+    if moved:
+        print(f"Moved {', '.join(moved)} to {target}")
+    return DATA_DIR
+
+
+def recon_cache_dir():
+    return DATA_DIR / "Recon"
+
+
+def load_config():
+    """Your settings, config.json in the app's folder. The page asks for them
+    several times a second, so the file is only read again when it changes."""
+    path = DATA_DIR / "config.json"
+    try:
+        mtime = path.stat().st_mtime
+        if mtime != _config_cache["mtime"]:
+            _config_cache["value"] = json.loads(path.read_text(encoding="utf-8")) or {}
+            _config_cache["mtime"] = mtime
+        return dict(_config_cache["value"])
     except (OSError, ValueError, TypeError):
         return {}
 
@@ -156,10 +226,83 @@ def load_config():
 def save_config(**changes):
     cfg = load_config()
     cfg.update(changes)
+    path = DATA_DIR / "config.json"
     try:
-        (APP_DIR / "config.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        _config_cache.update(mtime=path.stat().st_mtime, value=cfg)
     except OSError:
         pass
+
+
+# Recon's choices, kept in config.json. "ref" None follows your current
+# system; "ship" None follows the ship you're flying.
+RECON_DEFAULTS = {"radius": 100, "power": "any", "allegiance": "any", "sort": "givers",
+                  "ship": None, "ref": None}
+RECON_RADII = (50, 100, 200)
+RECON_ALLEGIANCES = ("any", "Empire", "Federation", "Alliance", "Independent")
+POWERS = sorted([v[0] for v in STYLES.values() if v[0]] + ["Archon Delaine"])
+
+
+def recon_prefs(changes=None):
+    """Recon's saved choices, with any `changes` (query strings from the
+    page) checked and saved first."""
+    cfg = load_config()
+    prefs = dict(RECON_DEFAULTS, **{k: v for k, v in (cfg.get("recon") or {}).items()
+                                    if k in RECON_DEFAULTS})
+    for key, value in (changes or {}).items():
+        if key == "radius" and value.isdigit() and int(value) in RECON_RADII:
+            prefs["radius"] = int(value)
+        elif key == "power" and (value in POWERS or value == "any"):
+            prefs["power"] = value
+        elif key == "allegiance" and value in RECON_ALLEGIANCES:
+            prefs["allegiance"] = value
+        elif key == "sort" and value in ("givers", "pay"):
+            prefs["sort"] = value
+        elif key == "ship":
+            prefs["ship"] = int(value) if value.isdigit() else None
+        elif key == "ref":
+            prefs["ref"] = value.strip()[:64] or None
+    if changes:
+        save_config(recon=prefs)
+    return prefs
+
+
+# The mini window's choices, kept in config.json. Off until you turn it on:
+# over a game in exclusive fullscreen it can't show at all.
+MINI_FIELDS = ("kills", "progress", "payout", "target", "wanted", "session", "slots")
+MINI_DEFAULTS = {"on": False, "fields": ["kills", "progress", "target", "wanted"], "size": "m",
+                 "opacity": 90, "click_through": True}
+
+
+def mini_prefs(changes=None):
+    """The mini window's saved choices, with any `changes` (query strings
+    from the Settings page) checked and saved first."""
+    cfg = load_config()
+    prefs = dict(MINI_DEFAULTS, **{k: v for k, v in (cfg.get("mini") or {}).items() if k in MINI_DEFAULTS})
+    for key, value in (changes or {}).items():
+        if key == "mini":
+            prefs["on"] = value not in ("0", "false")
+        elif key == "mini_fields":
+            prefs["fields"] = [f for f in value.split(",") if f in MINI_FIELDS]
+        elif key == "mini_size" and value in miniwin.WIDTHS:
+            prefs["size"] = value
+        elif key == "mini_opacity" and value.isdigit():
+            prefs["opacity"] = max(60, min(100, int(value)))
+        elif key == "mini_click":
+            prefs["click_through"] = value not in ("0", "false")
+    if changes:
+        save_config(mini=prefs)
+    return prefs
+
+
+def recon_online():
+    return load_config().get("recon_online", True) is not False
+
+
+def window_profile():
+    """The app window's own Edge profile, kept apart from your browsing."""
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
+    return Path(base) / APP_FILE / "window"
 
 
 def style_info(slug, choice):
@@ -190,6 +333,11 @@ SHIP_NAMES = {
     "viper_mkiv": "Viper Mk IV", "vulture": "Vulture", "explorer_nx": "Caspian Explorer",
     "panthermkii": "Panther Clipper Mk II", "lakonminer": "Type-11 Prospector",
 }
+
+
+# Ships that need a large landing pad, so no outpost can take them (Recon).
+LARGE_SHIPS = {"anaconda", "belugaliner", "cutter", "federation_corvette", "type7", "type9",
+               "type9_military", "panthermkii"}
 
 
 def ship_name(code, localised=None):
@@ -365,6 +513,10 @@ class Tracker:
         self.legal = {}           # star system -> {"wanted", "fine"}: the game's word on the latest jump in
         self.crimes = []          # (timestamp, star_system, faction, "bounty" | "fine", credits) still owed
         self.history = {}         # summary from the full-history scan (usual pace, rank rates)
+        self.recon_data = {}      # from the same scan: standing ledger, positions, fleet, evidence
+        self.ship = None          # the ship you're flying: {"id", "type", "name"}
+        self.vouchers = []        # (timestamp, "bounty" | "redeem" | "died", data): owed since the scan
+        self.ports = {}           # star system -> {station: type}, docked at in the scanned window
         self._history_full, self._history_at = None, 0.0
 
         self.current_file = None
@@ -381,7 +533,7 @@ class Tracker:
 
     @property
     def offsets_path(self):
-        return APP_DIR / "offsets.json"
+        return DATA_DIR / "offsets.json"
 
     def _load_offsets(self):
         self.offsets = {}
@@ -568,6 +720,10 @@ class Tracker:
         elif name == "Powerplay":
             self.power = {"name": ev.get("Power"), "rank": ev.get("Rank"), "merits": ev.get("Merits")}
 
+        elif name == "Loadout":
+            self.ship = {"id": ev.get("ShipID"), "type": str(ev.get("Ship") or "").lower(),
+                         "name": ev.get("ShipName")}
+
         elif name == "NpcCrewPaidWage":
             self.crew_wages.append((ts, ev.get("NpcCrewName") or "Crew", ev.get("Amount") or 0))
 
@@ -618,6 +774,8 @@ class Tracker:
             # accepted next came from -- and where it has to be handed back in.
             self.last_dock = {"system": ev.get("StarSystem"),
                               "station": ev.get("StationName")}
+            if ev.get("StarSystem") and ev.get("StationName"):
+                self.ports.setdefault(ev["StarSystem"], {})[ev["StationName"]] = ev.get("StationType")
 
         elif name == "Commander":
             self.commander = ev.get("Name") or self.commander
@@ -678,7 +836,16 @@ class Tracker:
                     "station": ev.get("NewDestinationStation"),
                 }
 
+        elif name == "RedeemVoucher" and ev.get("Type") == "bounty":
+            self.vouchers.append((ts, "redeem", [f.get("Faction") for f in ev.get("Factions") or []]))
+
+        elif name == "Died":
+            self.vouchers.append((ts, "died", None))
+
         elif name in ("Bounty", "FactionKillBond"):
+            if name == "Bounty":
+                self.vouchers.append((ts, "bounty", {r.get("Faction") or "": r.get("Reward") or 0
+                                                     for r in ev.get("Rewards") or []}))
             if ship_kill(ev):
                 self.combat["kills"] = self.combat.get("kills", 0) + 1
             # Bounty = bounty-hunting kills, FactionKillBond = combat-zone kills.
@@ -825,7 +992,9 @@ class Tracker:
         if self._history_full and time.time() - self._history_at < max_age:
             return self._history_full
         full = build_history(self.dir)
+        recon = full.pop("recon")
         with self.lock:
+            self.recon_data = recon
             self._history_full, self._history_at = full, time.time()
             self.history = {"usual_pace": full["usual_pace"], "empire_rate": full["empire_rate"],
                             "combat_rate": full["combat_rate"]}
@@ -950,6 +1119,10 @@ class Tracker:
     def provider(self, name):
         info = self.factions.get(name) or {}
         logged = info.get("rep")
+        if logged is None:
+            # Not met in the scanned window: the last reading from any journal.
+            reading = (self.recon_data.get("ledger") or {}).get(name)
+            logged = reading[1] if reading else None
         marks = self.rep_pending.get(name, 0)
         rep = logged
         if logged is not None and marks:
@@ -997,6 +1170,168 @@ class Tracker:
             return {"per_hour": round((len(times) - 1) / hours, 1), "source": "session"}
         usual = self.history.get("usual_pace")
         return {"per_hour": usual, "source": "usual"} if usual else None
+
+    # -- bounties to cash in ----------------------------------------------
+
+    def cash_in(self):
+        """Bounties you're owed and haven't cashed in, and the best place near
+        you to do it: the nearest station you've docked at in a system that
+        pays a bonus on them (Powerplay state as of your last visit there).
+        Merits for bounties come at the kill, so where you cash in doesn't
+        change them."""
+        base = self.recon_data.get("owed") or {}
+        owed = dict(base.get("factions") or {})
+        since = parse_ts(base.get("at"))
+        for ts, kind, data in self.vouchers:
+            if since and ts and ts <= since:
+                continue                                  # already in the scan
+            if kind == "bounty":
+                for faction, credits in data.items():
+                    owed[faction] = owed.get(faction, 0) + credits
+            elif kind == "died" or not data or "" in data:
+                owed.clear()
+            else:
+                for faction in data:
+                    owed.pop(faction, None)
+        total = sum(v for v in owed.values() if v > 0)
+        if not total:
+            return None
+        return {"total": total,
+                "factions": sorted(({"name": k or "Various", "credits": v} for k, v in owed.items() if v > 0),
+                                   key=lambda x: -x["credits"])[:8],
+                "best": self._best_cash_in()}
+
+    def _best_cash_in(self):
+        ports = {sysn: dict(st) for sysn, st in (self.recon_data.get("ports") or {}).items()}
+        for sysn, st in self.ports.items():
+            ports.setdefault(sysn, {}).update(st)
+        powers = dict(self.recon_data.get("powers") or {})
+        powers.update(self.system_power)
+        here = self.position(self.current_system)
+        large = bool(self.ship and self.ship.get("type") in LARGE_SHIPS)
+        options = []
+        for sysn, stations in ports.items():
+            power, state = powers.get(sysn, (None, None))
+            rate = BOUNTY_BONUS_BY_STATE.get(state, 0) if power in BOUNTY_BONUS_POWERS else 0
+            where = self.position(sysn)
+            if not rate or not here or not where:
+                continue
+            ly = math.dist(here[1], where[1])
+            for station, kind in stations.items():
+                if kind == "FleetCarrier" or (large and kind == "Outpost"):
+                    continue                              # carriers move; outposts can't take a large ship
+                options.append((rate, ly, station, sysn, power, state))
+        # Within a short trip, the bigger bonus; otherwise simply the nearest.
+        near = [o for o in options if o[1] <= 60]
+        pick = min(near or options, key=lambda o: (-o[0], o[1]) if near else (o[1], -o[0]), default=None)
+        if not pick:
+            return None
+        rate, ly, station, sysn, power, state = pick
+        return {"rate": rate, "ly": round(ly, 1), "station": station, "system": sysn,
+                "power": power, "state": state, "here": sysn == self.current_system}
+
+    # -- the mini window -----------------------------------------------------
+
+    def mini_report(self, prefs):
+        """Only what the mini window can show, from the same figures as Hunt.
+        Its stack is the one in the system you're in, or else the biggest."""
+        state = self.report()
+        groups = state.get("groups") or []
+        g = next((x for x in groups if x.get("in_position")), None) or (groups[0] if groups else None)
+        stack = None
+        if g:
+            # Progress along the queue that sets the pace: its missions' kills,
+            # counting those already finished (waiting to be handed in), so the
+            # bar doesn't jump back each time one of them completes.
+            queues = {}
+            for e in g["missions"]:
+                if not e["expired"]:
+                    q = queues.setdefault(e["giver"], [0, 0])
+                    q[0] += e["required"]
+                    q[1] += e["remaining"]
+            for r in state.get("ready") or []:
+                if (r.get("target_faction"), r.get("target_system")) == (g["target_faction"], g["system"]) \
+                        and r.get("giver") in queues:
+                    queues[r["giver"]][0] += r.get("required") or 0
+            total, left = max(queues.values(), key=lambda q: (q[1], q[0]), default=(0, 0))
+            stack = {"name": g["target_faction"], "system": g["system"], "needed": g["kills_needed"],
+                     "total": total, "done": max(0, total - left),
+                     "held": bool(g.get("held_back")), "next_payout": g.get("next_payout")}
+        session = state.get("session") or {}
+        style = self.style()
+        return {"fields": prefs["fields"], "size": prefs["size"],
+                "style": {k: style[k] for k in ("accent", "deep", "ground")},
+                "kills": (state.get("totals") or {}).get("kills_needed"), "stacks": len(groups),
+                "stack": stack, "target": state.get("target"), "legal": state.get("legal"),
+                "session": {"per_hour": session.get("credits_per_hour")} if session else None,
+                "slots": state.get("slots")}
+
+    # -- Recon ---------------------------------------------------------------
+
+    def fleet(self):
+        """Your ships, from the last shipyard visit and the ship you're in."""
+        ships = {s["id"]: dict(s) for s in self.recon_data.get("fleet") or []}
+        if self.ship and self.ship.get("id") is not None:
+            ships[self.ship["id"]] = dict(ships.get(self.ship["id"]) or {}, **self.ship)
+        current = self.ship["id"] if self.ship else next(
+            (s["id"] for s in ships.values() if s.get("current")), None)
+        return [dict(s, current=s["id"] == current, model=ship_name(s["type"]),
+                     large=s["type"] in LARGE_SHIPS)
+                for s in sorted(ships.values(), key=lambda s: s["id"])]
+
+    def position(self, system):
+        """Where a system is, if any journal has been there."""
+        if not system:
+            return None
+        known = self.recon_data.get("positions") or {}
+        pos = self.system_pos.get(system) or known.get(system)
+        if pos:
+            return system, pos
+        low = system.lower()
+        for name, where in list(self.system_pos.items()) + list(known.items()):
+            if name.lower() == low:
+                return name, where
+        return None
+
+    def recon_query(self, prefs):
+        """What to ask for: around the chosen system, or the one you're in."""
+        with self.lock:
+            fleet = self.fleet()
+            ship = next((s for s in fleet if s["id"] == prefs["ship"]), None) or next(
+                (s for s in fleet if s["current"]), None)
+            ref = prefs["ref"] or self.current_system
+            found = self.position(ref)
+        if not ref:
+            return None, fleet, ship
+        return ({"ref": found[0] if found else ref, "pos": found[1] if found else None,
+                 "radius": prefs["radius"], "large": bool(ship and ship["large"]),
+                 "power": None if prefs["power"] == "any" else prefs["power"]}, fleet, ship)
+
+    def recon_report(self, job, prefs, online, start=False, again=False):
+        """Everything the Recon page shows. With `start`, a search begins if
+        the question has changed since the last one, or its answer is old;
+        `again` searches regardless."""
+        query, fleet, ship = self.recon_query(prefs)
+        last = job.query if job else None
+        if (start or again) and online and job and query and (again or
+                not last or last["ref"].lower() != query["ref"].lower()
+                or any(last[k] != query[k] for k in ("radius", "large", "power"))
+                or job.status == "error"
+                or (job.finished and time.time() - job.finished > recon.INTRA_TTL)):
+            job.start(query)
+        evidence = self.recon_data.get("evidence") or {}
+        weights, measured = recon.state_weights(evidence)
+        pay = recon.pay_multipliers(evidence)
+        with self.lock:
+            result = job.snapshot(self.provider, weights, pay, prefs,
+                                  self.recon_data.get("stacked")) if job and online else None
+            here = self.current_system
+        return {"online": online, "prefs": prefs, "fleet": fleet,
+                "ship": ship, "here": here, "ref": query["ref"] if query else None,
+                "powers": POWERS, "radii": RECON_RADII, "allegiances": RECON_ALLEGIANCES,
+                "weights": weights, "measured": measured, "pay": pay,
+                "pledged": self.power.get("name"),
+                "result": result}
 
     def session_summary(self):
         start = self.session_start
@@ -1335,6 +1670,7 @@ class Tracker:
                     "system": dest.get("system") or m["origin_system"] or m["system"],
                     "station": dest.get("station") or m["origin_station"] or m["station"],
                     "target_system": m["system"],
+                    "target_faction": m["target_faction"],
                     "expiry": iso(m["expiry"]),
                     "expires_in": (m["expiry"] - now).total_seconds() if m["expiry"] else None,
                     **self.provider(m["giver"]),
@@ -1363,6 +1699,9 @@ class Tracker:
                 "last_event": iso(self.last_event),
                 "generated": iso(now),
                 "require_system": self.require_system,
+                "recon_online": recon_online(),
+                "show_where": load_config().get("show_where", True) is not False,
+                "cash_in": self.cash_in(),
                 "slots": {"used": self.slots_used(), "cap": MISSION_CAP},
                 "session": self.session_summary(),
                 "imperial": self.imperial(live_missions),
@@ -1415,7 +1754,16 @@ HISTORY_EVENTS = {b'"MissionAccepted"', b'"MissionCompleted"', b'"MissionFailed"
                   b'"FactionKillBond"', b'"FSDJump"', b'"Location"', b'"CarrierJump"',
                   b'"LoadGame"', b'"PowerplayMerits"', b'"Rank"', b'"Progress"',
                   b'"Promotion"', b'"NpcCrewPaidWage"', b'"Died"', b'"Loadout"',
-                  b'"Fileheader"', b'"Shutdown"', b'"Music"'}
+                  b'"Fileheader"', b'"Shutdown"', b'"Music"',
+                  # Recon: where missions were taken, and the fleet.
+                  b'"Docked"', b'"Undocked"', b'"StoredShips"', b'"ShipyardSell"',
+                  b'"SellShipOnRebuy"', b'"ShipyardBuy"', b'"SetUserShipName"',
+                  # Bounties to cash in.
+                  b'"RedeemVoucher"',
+                  # Materials: the inventory at each log-in, and what adds or spends it.
+                  b'"Materials"', b'"MaterialCollected"', b'"MaterialDiscarded"', b'"MaterialTrade"',
+                  b'"EngineerCraft"', b'"Synthesis"', b'"TechnologyBroker"', b'"EngineerContribution"',
+                  b'"ScientificResearch"'}
 
 
 def fast_ts(raw):
@@ -1460,6 +1808,34 @@ def build_history(journal_dir):
     combat_rank, combat_prev, ship_kills, combat_segments = None, None, 0, []
     detail, crew, deaths, flying = [], [], [], None    # for the statistics page
     left_at = None
+    # For Recon: your standing with every faction you've ever met, where
+    # systems are, your fleet, and what your own stacking says about how the
+    # game hands out massacre missions (see recon_evidence).
+    ledger, positions, here, visit, docked_in = {}, {}, {}, None, None
+    fleet, ship_now = {}, None
+    visits, pay, pairs = [], [], set()
+    # Merits for bounty hunting are awarded at the kill, not the cash-in
+    # (this journal: every merit award from bounties came within seconds of the
+    # kill, none after any cash-in), so each award is matched to its kill.
+    last_bounty, bounty_merits = None, []
+    # Bounties to cash in, per issuing faction: added by each bounty, cleared
+    # by a cash-in (a faction of "" clears them all) or by dying. And where
+    # they could go: every station you've docked at, and who held its system.
+    owed, ports, powers, last_ts = {}, {}, {}, None
+    # Materials: the inventory as each log-in lists it, moved by everything
+    # that adds or spends them since; and every one earned, for the sessions
+    # and stacks it was earned in (collected from wrecks, or a mission reward).
+    inventory, mats_at, mat_names, earned_mats, mat_rewards = {}, None, {}, [], {}
+
+    def move(symbol, count, localised=None):
+        symbol = str(symbol or "").lower()
+        if not symbol or not count:
+            return None
+        if localised:
+            mat_names[symbol] = localised
+        cap = materials.info(symbol)[3]
+        inventory[symbol] = max(0, min(cap or 10 ** 6, inventory.get(symbol, 0) + count))
+        return symbol
 
     for ts, e in iter_history(journal_dir):
         if ts is None:
@@ -1482,27 +1858,92 @@ def build_history(journal_dir):
             left_at = None
         if kind == "LoadGame" and not rejoined:
             session = {"start": ts, "end": ts, "active": 0.0, "kills": 0, "bounties": 0,
-                       "bonds": 0, "bond_kills": 0, "paid": 0, "merits": 0, "massacres": 0,
+                       "bonds": 0, "bond_kills": 0, "paid": 0, "merits": 0, "bounty_merits": 0, "massacres": 0,
                        "crew": 0, "deaths": 0, "accepted": 0, "factions": {}, "ships": {},
-                       "systems": {}, "flew": {}}
+                       "systems": {}, "flew": {}, "materials": {}}
             sessions.append(session)
         elif session:
             # Same rule as the live tracker: gaps over 10 minutes are breaks.
             session["active"] += min(max((ts - session["end"]).total_seconds(), 0), 600)
             session["end"] = ts
+        last_ts = ts
         if e is None:
             continue
 
         ev, mid = e.get("event"), e.get("MissionID")
+        if ev in ("FSDJump", "Location", "CarrierJump", "Docked", "Undocked") and visit:
+            visits.append(visit)            # leaving the station ends a visit
+            visit = None
         if ev in ("FSDJump", "Location", "CarrierJump"):
             system = e.get("StarSystem") or system
+            if isinstance(e.get("StarPos"), list) and len(e["StarPos"]) == 3:
+                positions[system] = tuple(e["StarPos"])
+            if "PowerplayState" in e:
+                powers[system] = (e.get("ControllingPower"), e.get("PowerplayState"))
+            if ev == "Location" and e.get("Docked") and e.get("StationName"):
+                ports.setdefault(system, {})[e["StationName"]] = e.get("StationType")
+            here = {}
             for fa in e.get("Factions") or []:
                 if fa.get("Name"):
                     allegiance[fa["Name"]] = fa.get("Allegiance")
+                    here[fa["Name"]] = (fa.get("Government"),
+                                        [s.get("State") for s in fa.get("ActiveStates") or [] if s.get("State")])
+                    if fa.get("MyReputation") is not None:
+                        ledger[fa["Name"]] = (ts, fa["MyReputation"])
+            if ev == "Location" and e.get("Docked"):
+                docked_in, visit = system, {"factions": here, "gave": set()}
+        elif ev == "Docked":
+            docked_in, visit = e.get("StarSystem") or system, {"factions": here, "gave": set()}
+            if e.get("StationName"):
+                ports.setdefault(docked_in, {})[e["StationName"]] = e.get("StationType")
+        elif ev == "Materials":
+            inventory, mats_at = {}, ts
+            for group in ("Raw", "Manufactured", "Encoded"):
+                for m in e.get(group) or []:
+                    move(m.get("Name"), m.get("Count") or 0, m.get("Name_Localised"))
+        elif ev == "MaterialCollected":
+            got = move(e.get("Name"), e.get("Count") or 0, e.get("Name_Localised"))
+            if got:
+                earned_mats.append((ts, got, e.get("Count") or 0, "collected", system))
+                if session:
+                    session["materials"][got] = session["materials"].get(got, 0) + (e.get("Count") or 0)
+        elif ev in ("MaterialDiscarded", "ScientificResearch"):
+            move(e.get("Name"), -(e.get("Count") or 0))
+        elif ev == "MaterialTrade":
+            paid, got = e.get("Paid") or {}, e.get("Received") or {}
+            move(paid.get("Material"), -(paid.get("Quantity") or 0), paid.get("Material_Localised"))
+            move(got.get("Material"), got.get("Quantity") or 0, got.get("Material_Localised"))
+        elif ev in ("EngineerCraft", "Synthesis", "TechnologyBroker"):
+            for m in e.get("Ingredients" if ev == "EngineerCraft" else "Materials") or []:
+                if isinstance(m, dict):
+                    move(m.get("Name"), -(m.get("Count") or 0), m.get("Name_Localised"))
+        elif ev == "EngineerContribution" and e.get("Type") == "Materials":
+            move(e.get("Material"), -(e.get("Quantity") or 0), e.get("Material_Localised"))
+        elif ev == "RedeemVoucher" and e.get("Type") == "bounty":
+            cleared = [f.get("Faction") for f in e.get("Factions") or []]
+            if not cleared or "" in cleared:
+                owed.clear()
+            for faction in cleared:
+                owed.pop(faction, None)
+        elif ev == "StoredShips":
+            # Everything in storage, here and elsewhere: the authority on the fleet.
+            fleet = {k: v for k, v in fleet.items() if k == ship_now}
+            for s in (e.get("ShipsHere") or []) + (e.get("ShipsRemote") or []):
+                if s.get("ShipID") is not None:
+                    fleet[s["ShipID"]] = {"id": s["ShipID"], "type": str(s.get("ShipType") or "").lower(),
+                                          "name": s.get("Name")}
+        elif ev in ("ShipyardSell", "SellShipOnRebuy", "ShipyardBuy"):
+            fleet.pop(e.get("SellShipID", e.get("SellShipId")), None)
+        elif ev == "SetUserShipName" and e.get("ShipID") in fleet:
+            fleet[e["ShipID"]]["name"] = e.get("UserShipName")
         elif ev in ("Bounty", "FactionKillBond"):
             kind = "bounty" if ev == "Bounty" else "bond"
             credits = (e.get("TotalReward") if ev == "Bounty" else e.get("Reward")) or 0
             kills.append((ts, e.get("VictimFaction"), system, credits, kind))
+            if ev == "Bounty":
+                last_bounty = (ts, system)
+                for r in e.get("Rewards") or []:
+                    owed[r.get("Faction") or ""] = owed.get(r.get("Faction") or "", 0) + (r.get("Reward") or 0)
             ship_kills += ship_kill(e)
             victim = (ship_name(e.get("Target"), e.get("Target_Localised")) if ship_kill(e) and ev == "Bounty"
                       else "Combat zone ship" if ev == "FactionKillBond" else "On foot")
@@ -1520,22 +1961,47 @@ def build_history(journal_dir):
                 session["crew"] += e.get("Amount") or 0
         elif ev == "Died":
             deaths.append(ts)
+            owed.clear()
             if session:
                 session["deaths"] += 1
         elif ev == "Loadout":
             flying = ship_name(e.get("Ship"))
+            ship_now = e.get("ShipID")
+            if ship_now is not None:
+                fleet[ship_now] = {"id": ship_now, "type": str(e.get("Ship") or "").lower(),
+                                   "name": e.get("ShipName")}
         elif ev == "PowerplayMerits":
             gained = e.get("MeritsGained") or 0
             merits.append((ts, gained))
+            from_bounty = last_bounty and (ts - last_bounty[0]).total_seconds() <= 3
+            if from_bounty:
+                bounty_merits.append((ts, gained, last_bounty[1]))
             if session:
                 session["merits"] += gained
+                session["bounty_merits"] += gained if from_bounty else 0
         elif ev == "MissionAccepted" and mid is not None:
             accepted[mid] = e
             if session:
                 session["accepted"] += 1
+            if str(e.get("Name") or "").startswith(MASSACRE_PREFIX):
+                giver = e.get("Faction")
+                if visit:
+                    visit["gave"].add(giver)
+                if docked_in and e.get("DestinationSystem"):
+                    pairs.add((docked_in, e["DestinationSystem"]))
+                reading = ledger.get(giver)
+                if reading and e.get("KillCount"):
+                    pay.append((standing(reading[1]), (e.get("Reward") or 0) / e["KillCount"]))
         elif ev == "MissionCompleted" and mid is not None:
             completed[mid] = e
             done_since.append(mid)
+            for m in e.get("MaterialsReward") or []:
+                got = move(m.get("Name"), m.get("Count") or 0, m.get("Name_Localised"))
+                if got:
+                    earned_mats.append((ts, got, m.get("Count") or 0, "missions", system))
+                    mat_rewards[mid] = mat_rewards.get(mid, 0) + (m.get("Count") or 0)
+                    if session:
+                        session["materials"][got] = session["materials"].get(got, 0) + (m.get("Count") or 0)
             if session:
                 session["paid"] += e.get("Reward") or 0
                 if str(e.get("Name") or "").startswith(MASSACRE_PREFIX):
@@ -1560,6 +2026,8 @@ def build_history(journal_dir):
             if "Combat" in e:
                 # A new rank starts at 0% here, so kills from now on count toward it.
                 combat_rank, combat_prev = e["Combat"], (0, e["Combat"], ship_kills)
+    if visit:
+        visits.append(visit)
 
     def pluses(m):
         return len(str(accepted.get(m, {}).get("Reputation") or ""))
@@ -1627,7 +2095,29 @@ def build_history(journal_dir):
         hours = active_hours([k[0] for k in window])
         t_hours = active_hours([k[0] for k in targets])
         income = paid + bounties + bonds          # "all-in": everything the stack paid
+        # For the stack's own page and report card.
+        fought = [d for d in detail if d[3] == where and d[0] and run["start"] <= d[0] <= hunt_end]
+        victims, flew = {}, {}
+        for d in fought:
+            victims[d[2]] = victims.get(d[2], 0) + 1
+            if d[4]:
+                flew[d[4]] = flew.get(d[4], 0) + 1
+        givers = {}
+        for m in mids:
+            g = givers.setdefault(accepted[m].get("Faction") or "Unknown",
+                                  {"name": accepted[m].get("Faction") or "Unknown", "missions": 0, "kills": 0})
+            g["missions"] += 1
+            g["kills"] += accepted[m].get("KillCount") or 0
         stacks.append({
+            "id": hashlib.sha1(f"{faction}|{where}|{iso(run['start'])}".encode()).hexdigest()[:10],
+            "victims": sorted(({"name": k, "count": v} for k, v in victims.items()), key=lambda x: -x["count"]),
+            "flew": sorted(({"name": k, "count": v} for k, v in flew.items()), key=lambda x: -x["count"]),
+            "givers": sorted(givers.values(), key=lambda g: -g["kills"]),
+            "bounty_merits": sum(g for t, g, sysn in bounty_merits
+                                 if sysn == where and run["start"] <= t <= hunt_end),
+            "materials": sum(n for t, sym, n, src, sysn in earned_mats
+                             if src == "collected" and sysn == where and run["start"] <= t <= hunt_end)
+                         + sum(mat_rewards.get(m, 0) for m in mids),
             "target_faction": faction,
             "system": where,
             "start": iso(run["start"]),
@@ -1664,11 +2154,12 @@ def build_history(journal_dir):
             p = providers.setdefault(c.get("Faction"), {"name": c.get("Faction"), "missions": 0, "paid": 0})
             p["missions"] += 1
             p["paid"] += c.get("Reward") or 0
-    places = {}
+    places, stacked = {}, {}
     for s in stacks:
         p = places.setdefault(s["system"], {"system": s["system"], "stacks": 0, "income": 0})
         p["stacks"] += 1
         p["income"] += s["income"]
+        stacked[s["system"]] = stacked.get(s["system"], 0) + s["missions"]
 
     massacres_done = [c for c in completed.values()
                       if str(c.get("Name") or "").startswith(MASSACRE_PREFIX)]
@@ -1691,7 +2182,31 @@ def build_history(journal_dir):
         crew_by[name] = crew_by.get(name, 0) + amount
     massacre_ids = {m for m, a in accepted.items() if str(a.get("Name") or "").startswith(MASSACRE_PREFIX)}
     biggest = max(detail, key=lambda d: d[5], default=None)
+    def mat_row(symbol, count):
+        grade, kind, name, cap = materials.info(symbol, mat_names.get(symbol))
+        return {"name": name, "count": count, "grade": grade, "kind": kind, "cap": cap}
+
+    earned_by = {}
+    for t, sym, n, src, sysn in earned_mats:
+        earned_by[sym] = earned_by.get(sym, 0) + n
+    by_grade = {}
+    for sym, n in earned_by.items():
+        g = materials.info(sym)[0]
+        if g:
+            by_grade[g] = by_grade.get(g, 0) + n
+    near_cap = [dict(mat_row(sym, n), share=round(n / materials.info(sym)[3], 3))
+                for sym, n in inventory.items() if materials.info(sym)[3] and n >= 0.9 * materials.info(sym)[3]]
+
     stats = {
+        "materials": {
+            "earned": sum(earned_by.values()),
+            "collected": sum(n for t, sym, n, src, sysn in earned_mats if src == "collected"),
+            "missions": sum(n for t, sym, n, src, sysn in earned_mats if src == "missions"),
+            "by_grade": [{"grade": g, "count": by_grade[g]} for g in sorted(by_grade)],
+            "top": sorted((mat_row(sym, n) for sym, n in earned_by.items()), key=lambda r: -r["count"])[:10],
+            "near_cap": sorted(near_cap, key=lambda r: (-r["share"], r["name"])),
+            "inventory_at": iso(mats_at),
+        },
         "kills_by_faction": [dict(x, credits=faction_credits.get(x["name"], 0)) for x in top(tally(1))],
         "kills_by_ship": top({k: v for k, v in tally(2).items() if k != "On foot"}, 10),
         "kills_by_system": top({k or "Unknown": v for k, v in tally(3).items()}),
@@ -1716,11 +2231,12 @@ def build_history(journal_dir):
             "start": iso(s["start"]), "end": iso(s["end"]), "hours": round(s["active"] / 3600, 2),
             "kills": s["kills"], "bounties": s["bounties"], "bonds": s["bonds"],
             "bond_kills": s["bond_kills"], "paid": s["paid"],
-            "merits": s["merits"], "massacres": s["massacres"],
+            "merits": s["merits"], "bounty_merits": s["bounty_merits"], "massacres": s["massacres"],
+            "materials": sorted((mat_row(sym, n) for sym, n in s["materials"].items()), key=lambda r: -r["count"]),
             "crew": s["crew"], "deaths": s["deaths"], "accepted": s["accepted"],
             "by_faction": top(s["factions"], 6), "by_ship": top(s["ships"], 6),
             "by_system": top(s["systems"], 6), "flew": top(s["flew"], 4),
-            "stacks": [{"target_faction": st["target_faction"], "system": st["system"],
+            "stacks": [{"id": st["id"], "target_faction": st["target_faction"], "system": st["system"],
                         "missions": st["missions"], "in_progress": st["in_progress"]} for st in stacks_in],
         }
     return {
@@ -1747,6 +2263,50 @@ def build_history(journal_dir):
         "usual_pace": usual_pace,
         "empire_rate": empire_rate,
         "combat_rate": combat_rate,
+        # Kept by the tracker for Recon, not sent to the statistics page.
+        "recon": {
+            "ledger": ledger,
+            "positions": positions,
+            "fleet": [dict(s, current=s["id"] == ship_now) for s in fleet.values()],
+            "evidence": recon_evidence(visits, pay, pairs, positions),
+            "stacked": stacked,
+            "owed": {"at": iso(last_ts), "factions": owed},
+            "ports": ports,
+            "powers": powers,
+        },
+    }
+
+
+def recon_evidence(visits, pay, pairs, positions):
+    """What this commander's own stacking says about massacre missions.
+
+    - How far from the station the pirates were, for every stack taken.
+    - Reward per kill by your standing with the giver when you took it.
+    - For every station visit where you took massacre missions, how often a
+      faction in each state gave you one. Anarchies don't give them, so they
+      are left out. A faction that gave nothing may just have had a poor
+      board, so only the comparison between states means anything.
+    """
+    distances = sorted(round(math.dist(positions[a], positions[b]), 2)
+                       for a, b in pairs if a in positions and b in positions)
+    bands = {}
+    for band, per_kill in pay:
+        bands.setdefault(band, []).append(per_kill)
+    states = {}
+    stacking = [v for v in visits if v["gave"]]
+    for v in stacking:
+        for name, (gov, active) in v["factions"].items():
+            if gov == "Anarchy":
+                continue
+            for state in active or ["None"]:
+                row = states.setdefault(state, {"n": 0, "gave": 0})
+                row["n"] += 1
+                row["gave"] += name in v["gave"]
+    return {
+        "distances": distances,
+        "pay": {b: {"n": len(v), "per_kill": sorted(v)[len(v) // 2]} for b, v in bands.items()},
+        "states": states,
+        "visits": len(stacking),
     }
 
 
@@ -1906,6 +2466,80 @@ def verify(tracker):
     print()
 
 
+def recon_check(tracker):
+    """What your own journal says about how massacre missions are handed out:
+    the numbers Recon weighs its results with."""
+    tracker.history_report()
+    ev = tracker.recon_data.get("evidence") or {}
+    weights, measured = recon.state_weights(ev)
+    pay = recon.pay_multipliers(ev)
+    d = ev.get("distances") or []
+    print()
+    print("How far the pirates were from the station, for every stack you took:")
+    print(f"  {len(d)} stacks, all within {max(d):.1f} ly" if d else "  no stacks with known positions yet")
+    print()
+    print("Reward per kill by your standing with the giver when you took the mission:")
+    for band in ("Neutral", "Cordial", "Friendly", "Allied"):
+        row = (ev.get("pay") or {}).get(band)
+        if row:
+            print(f"  {band:9} {row['n']:>4} missions  median {fmt_cr(int(row['per_kill'])):>11} cr/kill"
+                  f"   Recon counts it x{pay[band]}")
+    print()
+    print(f"Givers in each state, on the {ev.get('visits', 0)} station visits where you took massacre missions:")
+    rows = sorted((ev.get("states") or {}).items(), key=lambda kv: -kv[1]["n"])
+    for state, row in rows:
+        note = (f"x{weights[state]} (measured)" if state in measured
+                else f"x{weights[state]} (default; too few to measure)" if state in weights
+                else "" if state == "None" else "x1.0 (too few to measure)")
+        print(f"  {state:20} {row['gave']:>4} of {row['n']:<4} gave one ({row['gave'] / row['n']:.0%})  {note}")
+    for state in weights:
+        if state not in (ev.get("states") or {}):
+            print(f"  {state:20}    never seen            x{weights[state]} (default)")
+    print()
+
+
+def recon_console(tracker, system):
+    """A Recon search from the command line, printed as text."""
+    tracker.history_report()
+    job = recon.Recon(recon_cache_dir())
+    prefs = dict(recon_prefs(), ref=system or None)
+    query, _, ship = tracker.recon_query(prefs)
+    if not query:
+        print("No reference system: pass one, e.g. --recon Sol")
+        return 1
+    print(f"Searching around {query['ref']} within {query['radius']} ly"
+          f"{', large pads (' + ship['model'] + ')' if query['large'] else ''}...")
+    job.start(query)
+    while job.status not in ("done", "error"):
+        time.sleep(0.5)
+    report = tracker.recon_report(job, prefs, True)["result"]
+    if report["status"] == "error":
+        print(f"  Recon failed: {report['error']}")
+        return 1
+    print(f"  {report['checked'] - report['failed']} systems named"
+          f"{', ' + str(report['failed']) + ' EDSM could not answer' if report['failed'] else ''}.")
+    print()
+    for t in report["targets"][:15]:
+        if t.get("pending"):
+            continue
+        pirates = ", ".join(t["pirates"]) or "?"
+        print(f"{t['system']}  {t['distance']:.1f} ly  -- {t['count']} givers, score {t['score']},"
+              f" pay {t['pay']}  -- pirates: {pirates}"
+              f"{'  [stacked here: ' + str(t['stacked']) + ' missions]' if t['stacked'] else ''}")
+        for s in t["sources"]:
+            port = (f"starport {s['starport_ls']:.0f} ls" if s["starport_ls"] is not None
+                    else f"outpost {s['outpost_ls']:.0f} ls" if s["outpost_ls"] is not None else "no port")
+            print(f"    from {s['system']} ({port}): {len(s['givers'])} givers")
+        liked = [g for g in t["givers"] if g["standing"] in ("Friendly", "Allied")]
+        if liked:
+            print(f"    you're {', '.join(g['standing'] + ' with ' + g['name'] for g in liked)}")
+        worse = [g for g in t["givers"] if g["weight"] < 1]
+        if worse:
+            print(f"    held back: {', '.join(g['name'] + ' (' + (', '.join(g['states']) or g['standing'] or '') + ')' for g in worse)}")
+    print()
+    return 0
+
+
 # --------------------------------------------------------------------------
 # Web server
 # --------------------------------------------------------------------------
@@ -1944,6 +2578,8 @@ def already_running(port):
 
 class Handler(BaseHTTPRequestHandler):
     tracker = None
+    recon = None          # the Recon search (recon.Recon), which goes online
+    mini = None           # the mini window (miniwin.MiniWindow), on Windows unless --no-browser
     last_seen = 0.0       # when a dashboard last asked for data
     bye_at = 0.0          # when a dashboard said it was closing
 
@@ -1998,17 +2634,21 @@ class Handler(BaseHTTPRequestHandler):
             body = json.dumps(self.tracker.history_report())
             self._send(200, body, "application/json; charset=utf-8")
 
-        elif route == "/emblem":
-            # The style's emblem, unless you've put one of your own beside
-            # stacker.py (or the .exe) as my-emblem.png / .svg / .webp / .jpg.
+        elif route in ("/emblem", "/app-icon"):
+            # Your own emblem, if you've put one beside stacker.py (or the
+            # .exe) as my-emblem.png / .svg / .webp / .jpg. Otherwise the
+            # page wears the style's emblem, but the window's icon (taskbar,
+            # Alt-Tab) is always the Interstellar mark, like the .exe's: the
+            # browser keeps a window's icon long after the style changes.
             types = {".svg": "image/svg+xml", ".png": "image/png",
                      ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
-            for suffix, ctype in types.items():
-                path = APP_DIR / f"my-emblem{suffix}"
-                if path.is_file():
-                    self._send(200, path.read_bytes(), ctype)
-                    return
-            self._style_image(self.tracker.style()["slug"])
+            for folder in (DATA_DIR, APP_DIR):
+                for suffix, ctype in types.items():
+                    path = folder / f"my-emblem{suffix}"
+                    if path.is_file():
+                        self._send(200, path.read_bytes(), ctype)
+                        return
+            self._style_image("interstellar" if route == "/app-icon" else self.tracker.style()["slug"])
 
         elif route.startswith("/styles/") and route.endswith(".png"):
             self._style_image(route[len("/styles/"):-len(".png")])
@@ -2052,15 +2692,39 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200 if ok else 404, json.dumps({"ok": ok}),
                        "application/json; charset=utf-8")
 
+        elif route == "/api/recon":
+            # Any of Recon's choices in the query are saved first; `start`
+            # searches if the question changed (or the last answer is old).
+            params = {k: v[0] for k, v in parse_qs(parsed.query, keep_blank_values=True).items()}
+            changes = {k: v for k, v in params.items() if k in RECON_DEFAULTS}
+            prefs = recon_prefs(changes)
+            body = json.dumps(self.tracker.recon_report(self.recon, prefs, recon_online(),
+                                                        start="start" in params or bool(changes),
+                                                        again="again" in params))
+            self._send(200, body, "application/json; charset=utf-8")
+
         elif route == "/api/config":
             params = parse_qs(parsed.query)
+            if "recon" in params:
+                save_config(recon_online=params["recon"][0] not in ("0", "false"))
+            if "show_where" in params:
+                save_config(show_where=params["show_where"][0] not in ("0", "false"))
+            mini_changes = {k: v[0] for k, v in params.items() if k.startswith("mini")}
+            mini = mini_prefs(mini_changes)
+            if mini_changes and self.mini:
+                self.mini.configure(mini["on"], mini["size"], mini["opacity"], mini["click_through"])
             if "require_system" in params:
                 self.tracker.require_system = params["require_system"][0] not in ("0", "false")
             if "style" in params:
                 choice = params["style"][0]
                 save_config(style=choice if choice in STYLES else "auto")
+            about = {"journal_dir": str(self.tracker.dir), "data_dir": str(DATA_DIR),
+                     "window_profile": str(window_profile())}
             self._send(200, json.dumps({"require_system": self.tracker.require_system,
-                                        "style": self.tracker.style()}),
+                                        "style": self.tracker.style(), "recon": recon_online(),
+                                        "about": about, "mini": mini, "mini_fields": MINI_FIELDS,
+                                        "mini_available": bool(self.mini),
+                                        "game_display": miniwin.game_display_mode()}),
                        "application/json; charset=utf-8")
         else:
             self._send(404, "not found", "text/plain; charset=utf-8")
@@ -2145,9 +2809,8 @@ def open_window(url, tab=False):
         # A profile of its own keeps the window separate from your browsing
         # (and remembers its size and place), and makes the browser process
         # ours, so we can tell when the window has been closed.
-        base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
-        profile = Path(base) / APP_FILE / "window"
-        old = Path(base) / "Imperial Anti-Piracy Network" / "window"    # before the rename
+        profile = window_profile()
+        old = profile.parent.parent / "Imperial Anti-Piracy Network" / "window"    # before the rename
         try:
             if old.is_dir() and not profile.exists():
                 profile.parent.mkdir(parents=True, exist_ok=True)
@@ -2184,12 +2847,15 @@ def close_with_window(server, window):
         quiet = now - Handler.last_seen > 90
         if said_bye or (ended and not handed_off and quiet):
             break
+    if Handler.mini:
+        Handler.mini.close()
     server.shutdown()
 
 
 def main():
     own_console = False
-    if any(flag in sys.argv for flag in ("-h", "--help", "--console", "--verify")):
+    if any(flag in sys.argv for flag in ("-h", "--help", "--console", "--verify",
+                                         "--recon", "--recon-check")):
         own_console = borrow_console()
     try:
         return run()
@@ -2205,6 +2871,10 @@ def run():
     ap.add_argument("--days", type=int, default=30, help="how far back to scan (default 30)")
     ap.add_argument("--console", action="store_true", help="print a summary and exit")
     ap.add_argument("--verify", action="store_true", help="check kill counting against history")
+    ap.add_argument("--recon", nargs="?", const="", metavar="SYSTEM",
+                    help="where to stack next, around SYSTEM (default: where you are); goes online")
+    ap.add_argument("--recon-check", action="store_true",
+                    help="what your journal says about how massacre missions are handed out")
     ap.add_argument("--any-system", action="store_true",
                     help="count kills regardless of which system they happened in")
     ap.add_argument("--tab", action="store_true",
@@ -2215,7 +2885,8 @@ def run():
     url = f"http://127.0.0.1:{args.port}/"
 
     # Started twice (a second double-click, say): show the one that's running.
-    if not (args.verify or args.console) and already_running(args.port):
+    one_shot = args.verify or args.console or args.recon is not None or args.recon_check
+    if not one_shot and already_running(args.port):
         print(f"{APP_NAME} is already running at {url}")
         if not args.no_browser:
             open_window(url, tab=args.tab)
@@ -2228,6 +2899,7 @@ def run():
                     f'Pass it explicitly:  {PROG} --journal-dir "D:\\path\\to\\folder"',
                     f"or put its path in config.json beside {'the .exe' if FROZEN else 'stacker.py'}.")
 
+    use_data_dir(journal_dir)
     tracker = Tracker(journal_dir, days=args.days, require_system=not args.any_system)
     print(f"Reading journals from: {journal_dir}")
     tracker.load_history()
@@ -2241,10 +2913,18 @@ def run():
         print_report(tracker.report())
         return 0
 
+    if args.recon_check:
+        recon_check(tracker)
+        return 0
+
+    if args.recon is not None:
+        return recon_console(tracker, args.recon)
+
     threading.Thread(target=watcher, args=(tracker,), daemon=True).start()
     threading.Thread(target=tracker.history_report, daemon=True).start()
 
     Handler.tracker = tracker
+    Handler.recon = recon.Recon(recon_cache_dir())    # searches only when asked
     try:
         server = Server(("127.0.0.1", args.port), Handler)
     except OSError as exc:
@@ -2258,11 +2938,18 @@ def run():
     print()
     if not args.no_browser:
         window = open_window(url, tab=args.tab)
+        if miniwin.SUPPORTED:
+            prefs = mini_prefs()
+            Handler.mini = miniwin.MiniWindow(lambda: tracker.mini_report(mini_prefs()),
+                                              RES_DIR / "fonts" / "saira.ttf")
+            Handler.mini.configure(prefs["on"], prefs["size"], prefs["opacity"], prefs["click_through"])
         threading.Thread(target=close_with_window, args=(server, window), daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
+    if Handler.mini:
+        Handler.mini.close()
     print("Stopped.")
     return 0
 

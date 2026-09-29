@@ -33,8 +33,12 @@ screen is traceable to a journal event.
 
 ## Operating Context
 
-- Local only: `stacker.py` (Python standard library) tails the journal folder
+- Local: `stacker.py` (Python standard library) tails the journal folder
   and serves `dashboard.html` at http://127.0.0.1:8765, polled once a second.
+  The one exception is Recon (`recon.py`), which asks INTRA and EDSM about
+  systems (a position and system names only; never the commander's name or
+  standing). It is on by default and switched off under Settings (the
+  commander's choice: opt-out).
 - Viewed by alt-tab on the same monitor as the game, usually mid-session, in a
   window of its own (an Edge app window with a dedicated profile); closing the
   window quits the app. The packaged .exe has no console window.
@@ -73,14 +77,67 @@ screen is traceable to a journal event.
   kills-per-percent at this rank), Imperial Navy rank with an estimate of what handing in
   current Imperial missions adds (measured from the commander's own history,
   about 0.30% per reputation "+" at Duke), and Powerplay rank with merits.
-- Four pages: Hunt (the live stacks), Commander (this session in full with crew
+- Five pages: Hunt (the live stacks), Commander (this session in full with crew
   share and a copyable summary, ranks with time to the next at this session's
   pace, mission providers and targets with standing and faction state),
   Statistics (lifetime earnings, an earnings-per-hour chart, kills by faction,
   ship type, system and own ship, favourites, missions, crew wages, deaths,
-  every stack) and History (every session as a link to its own statistics). A
-  relog within 30 minutes continues the session.
-- Toggles: hand-in station on every mission; count kills only in the target system.
+  every stack), History (every session as a link to its own statistics) and
+  Recon (where to stack next). A relog within 30 minutes continues the session.
+- Recon: target systems (one pirate faction's home) whose sources in reach
+  have exactly that one target (INTRA's pairs), ranked by distinct givers
+  (non-Anarchy factions, each counted once across sources, as same-giver
+  missions queue) divided by the pirate factions there; givers weighed by
+  state (Elections count for nothing: 0 of 28 in the commander's journal;
+  states measured from the journal at 15+ samples, defaults otherwise) and
+  left out when Unfriendly or Hostile. The commander's standing (full-history
+  ledger) is highlighted and breaks ties; "Best pay" ranks by it. Reference
+  system defaults to the current one; the ship, picked from the fleet, sets
+  the pad size; Refine prioritises giver allegiance and the power holding the
+  target, and sets radius and sort. States older than 3 days are ignored,
+  systems not reported for 7 days dropped. Deserters and Infected missions
+  target the same factions, so there is no separate control. Sources with two
+  or more pirate systems in reach are not shown (INTRA leaves them out).
+- Settings is a page of its own (the toolbar button, Back or Esc returns): style,
+  the Hunt toggles (hand-in station on every mission; count kills only in the
+  target system), the mini window, Recon's online switch, and where the app keeps
+  its files. Everything is saved in `config.json`.
+- The app's own files (settings, hand corrections, Recon's cache, an emblem of
+  the commander's own) live in `Anti-Piracy Network` inside the journal folder,
+  whichever folder the app runs from; older copies beside the app, and the cache
+  in AppData, are moved there on first start. Only a `journal_dir` override stays
+  beside the app. The window's Edge profile stays in `%LOCALAPPDATA%` (about 1 GB,
+  a full browser profile: not for a folder OneDrive or backups may sync).
+- Mini window: a native window (`miniwin.py`, tkinter, Python's own) at the
+  top-left of the screen showing only the rounded info panel: everything around
+  it is a see-through colour, so the game shows (the commander's ask: "just the
+  info box and nothing else"). An Edge window was tried first and dropped: Edge
+  draws with DirectComposition, which window regions don't clip, so its white
+  frame always showed. Kills to go, stack progress (along the pace-setting
+  queue, finished missions included), target check and wanted alert by default;
+  next payout, credits an hour and mission slots on request. Drawn in Saira from
+  `fonts/saira.ttf`, loaded privately (Windows can't read WOFF2). Always on top,
+  click-through, out of the taskbar and Alt-Tab, never takes focus; size and
+  opacity are settings. Off by default. It needs the game in Borderless or
+  Windowed mode (exclusive fullscreen can't be overlaid), which Settings detects
+  from `DisplaySettings.xml`. It reads the tracker directly, so it has no bearing
+  on when the app quits, and it closes with the app.
+- Stack report cards: every stack has its own page under Statistics (givers,
+  ships killed and flown, materials, bounty merits) with a 1600×900 PNG export
+  sharing the session card's drawing (`drawCard`). Finished stacks link to it
+  from Ready to hand in.
+- To cash in: bounties earned and not cashed in (per issuing faction; a cash-in
+  naming "" clears them all, dying clears them), from the full history plus live
+  events, with the nearest docked station where a Powerplay bonus applies.
+  Merits for bounty hunting are awarded at the kill (the commander's journal: all
+  of them within seconds of a kill, none after any of 12 cash-ins; the wiki's
+  Powerplay 2.0 table and INTRA agree), so the Power Contact adds none; bounty
+  merits are counted per stack and session.
+- Materials, on Statistics and History only (the commander's choice, not Hunt):
+  inventory from each log-in's `Materials` list moved by every event that adds or
+  spends (91% of log-ins predicted exactly on replay; each log-in resets it),
+  earned by source and grade, and full-or-nearly materials (90% of the grade's
+  cap: 300/250/200/150/100).
 - Declined by the commander: a mission-board calculator, sounds, hunting-ground
   statistics, and a phone/LAN view.
 - The journal cannot see the mission board and writes no event when a finished
@@ -101,7 +158,7 @@ screen is traceable to a journal event.
 - Bounties are shown as accumulated income, never framed as "at risk".
 - The app is named "Anti-Piracy Network" (the commander's choice, after
   "Massacre Stack", "Imperial Anti-Piracy Network" and "Her Imperial Majesty's
-  Anti-Piracy Network"); each style prefixes it ("Her Highness' Anti-Piracy
+  Anti-Piracy Network"); each style prefixes it ("Her Imperial Highness' Anti-Piracy
   Network", "Utopian Anti-Piracy Collective"...). The exe is "Anti-Piracy
   Network.exe", its icon the Interstellar mark. Each launch opens with a short "Welcome,
   Commander" card around the Arissa Lavigny-Duval emblem.

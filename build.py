@@ -4,8 +4,9 @@
     python build.py
 
 The .exe lands in dist/. It carries dashboard.html, the Saira font and every
-style's emblem inside it; a config.json, offsets.json or emblem of your own
-goes beside the .exe. Its icon is the Interstellar (no-style) emblem.
+style's emblem inside it; your own settings, corrections and emblem live in an
+"Anti-Piracy Network" folder beside your journals. Its icon is the Interstellar
+(no-style) emblem.
 """
 import glob
 import os
@@ -55,6 +56,8 @@ def main():
         *(data(HERE / "emblem.png", ".") if (HERE / "emblem.png").is_file() else []),
         # File by file: an escaped folder pattern nests as fonts/fonts/.
         *data(HERE / "fonts" / "saira.woff2", "fonts"),
+        # The mini window is drawn by Windows itself, which can't read WOFF2.
+        *data(HERE / "fonts" / "saira.ttf", "fonts"),
         *data(HERE / "fonts" / "OFL.txt", "fonts"),
         str(HERE / "stacker.py"),
     ], check=True)

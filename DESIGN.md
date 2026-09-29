@@ -238,7 +238,7 @@ A near-monochrome plum-dark system with a single violet voice and three state co
 - **Sentence** (400, 13.5px, 1.45, max 78ch): state sentences under a stack head.
 - **Label** (13px): key-value grids, meta lines, buttons (500), table cells. Values are 600 in `label`, keys 400 in `label-2`.
 - **Caption** (12 to 12.5px, `label-3` or `label-2`): hand-in lines, footnotes, ticker keys, column heads.
-- **Wordmark** (500, 13.5px, .16em tracking, uppercase; .12em at 720px and below): "Anti-Piracy Network" in the toolbar, with the style's prefix ("Her Imperial Majesty's", "Federal Security Service"...) set above it as an eyebrow (600, 11px, .24em tracking, `label-3`; .19em at 720px and below), tracked so the two lines run the same width. The lockup stays narrow enough to share a phone-width toolbar row with the View and Refresh buttons.
+- **Wordmark** (500, 13.5px, .16em tracking, uppercase; .12em at 720px and below): "Anti-Piracy Network" in the toolbar, with the style's prefix ("Her Imperial Majesty's", "Federal Security Service"...) set above it as an eyebrow (600, 11px, .24em tracking, `label-3`; .19em at 720px and below), tracked so the two lines run the same width. The lockup stays narrow enough to share a phone-width toolbar row with the Settings and Refresh buttons.
 
 ### Named Rules
 **The Thin Numeral Rule.** Only the two kill counts are set at 300 weight and large; no other number competes with them. Every other figure is 13 to 15px at 600.
@@ -263,11 +263,11 @@ Responsive steps, all observed:
 
 ## Elevation & Depth
 
-Depth is mostly tonal: ground, then plum surface, then surface-2 insets, each a step lighter, bounded by white hairlines. Stack cards add one quiet lift, a 1px inner top highlight plus a long soft drop shadow. Vibrancy (blur plus saturation) is used only where content scrolls beneath: the sticky toolbar and the view-options popover.
+Depth is mostly tonal: ground, then plum surface, then surface-2 insets, each a step lighter, bounded by white hairlines. Stack cards add one quiet lift, a 1px inner top highlight plus a long soft drop shadow. Vibrancy (blur plus saturation) is used only where content scrolls beneath: the sticky toolbar and Recon's Refine popover.
 
 ### Shadow Vocabulary
 - **Card lift** (`box-shadow: 0 1px 0 rgba(255, 255, 255, .035) inset, 0 16px 36px -18px rgba(0, 0, 0, .7)`): stack cards only.
-- **Popover float** (`box-shadow: 0 20px 50px -10px rgba(0, 0, 0, .6)`): the view-options popover.
+- **Popover float** (`box-shadow: 0 20px 50px -10px rgba(0, 0, 0, .6)`): Recon's Refine popover.
 - **Control knob** (`box-shadow: 0 2px 5px rgba(0, 0, 0, .35)` on switch knobs; `0 1px 2px rgba(0, 0, 0, .35)` on the selected segment): the small lift Apple gives to a thumb.
 
 ### Named Rules
@@ -289,8 +289,8 @@ Tinted, quiet, and violet-lettered, like toolbar buttons in a first-party Mac ap
 - **Focus:** a 2px imperial outline, 2px offset, across every focusable element.
 
 ### Segmented Control
-- **Style:** a `fill` track with 2px padding and 8px corners; segments 26px tall with 6px corners, concentric with the track, `label-2` text. The selected segment is .16 white with `label` text and the small knob shadow. Tabs are Stacks and Journal.
-- **Mobile:** stretches full width on the toolbar's second row, segments sharing the width.
+- **Style:** a `fill` track with 2px padding and 8px corners; segments 26px tall with 6px corners, concentric with the track, `label-2` text. The selected segment is .16 white with `label` text and the small knob shadow. Tabs are Hunt, Commander, Statistics, History and Recon. The same control, as a radio group, sets each of Recon's Refine options.
+- **Narrow:** under 1000px it stretches full width on the toolbar's second row, segments sharing the width; on a phone its segments tighten to 4px padding at 12.5px so five pages and the slot count share the row.
 
 ### Switch
 - iOS switch: 40 by 24px, `switch-track` grey when off, white 20px knob with a soft shadow, deep imperial when on; the knob slides 16px on the site's ease-out curve. Lives in option rows (8px corners, .04 white on hover; title at 600 14px, `label-2` explanation beneath).
@@ -303,10 +303,11 @@ Tinted, quiet, and violet-lettered, like toolbar buttons in a first-party Mac ap
 
 ### Inputs / Fields
 - **Style:** 28px tall, 76px wide numeric field on the ground color inside a `surface-2` inset panel, 1px `hairline-strong` stroke, 8px corner (`control`), 600 14px tabular figures, violet caret.
+- **Recon's fields:** the system name and the ship picker are a 30px text field and select on the same ground, stroke and corner, 500 13px, under a 12px `label-2` label; the field shares a row with its Search button.
 - **Focus:** 2px imperial outline flush to the edge.
 
 ### Navigation
-- **Toolbar:** sticky, 58px, vibrancy ground with a hairline beneath. Left to right: 30px emblem, wordmark lockup, live state (7px green dot and "Live"; amber when contact is lost), commander, current system, then the segmented control and mission slots (`label-2`, the count amber when full), then View and Refresh buttons.
+- **Toolbar:** sticky, 58px, vibrancy ground with a hairline beneath. Left to right: 30px emblem, wordmark lockup, live state (7px green dot and "Live"; amber when contact is lost), commander, current system, then the segmented control and mission slots (`label-2`, the count amber when full), then Settings (which opens its page) and Refresh buttons.
 
 ### Range Row (signature)
 Weather's temperature-range bar, turned into a kill axis. Each mission is a segment on its stack's one shared axis: a provider's queue lays its missions end to end from 0, and all queues in a stack share the scale, so the pace-setting queue reaches the end.
@@ -325,6 +326,18 @@ Every state is written, not badged: a 15px line icon, then a 13.5px sentence in 
 ### Giver Head
 Each giver's queue opens with its name and standing on the left and, on the right, its kill total in `label-2` 13px. The pace-setting queue follows it with "sets the pace" in imperial violet; every other queue, while a mission slot is free, with "N free" in the same violet at the same place: the kills a further mission from that giver could need and still cost nothing. Both explain themselves on hover.
 
+### Settings Page
+A page of its own, reached from the toolbar's Settings button (shown selected while you're there; it, Back or Esc returns to the page you came from). The side column carries the title and a line about where settings are saved; the main column is one card per subject (Style, Hunt, Mini window, Recon, About), each a stack card whose option rows run edge to edge between hairlines. Choices inside a card use the segmented control as a radio group, a native checkbox grid in the accent for "what it shows", and a range slider for opacity.
+
+### Mini Window
+A borderless panel over the game at the top-left of the screen: the hero's thin numerals at about 44px (kills to go) with the stack's name beside it, a 5px range-row track, then one line per state with a small dot in state colour (green counts, amber wrong system or a fine, red clean target or wanted). Its height is whatever the chosen lines need; sizes Small/Medium/Large scale everything together. The panel has 10px rounded corners with a hairline border and nothing else: it's a native window whose surroundings are a see-through colour, so the game shows right up to its edge. Solid colours stand in for the dashboard's translucent ones (label-2 and label-3 mixed over the panel, which is the style's ground halfway to the app's ground); the progress fill is the style's accent.
+
+### Stack Page and Report Card
+Each stack's page mirrors a History session: the side column opens like the hero (target faction with the target icon, the all-in credits in thin numerals, dates and system), then a key-value grid and Export image; the main column has bar-list cards for givers, ships killed and your ships. The report card is the session card's layout with a Givers list in place of rank bars.
+
+### Recon Card
+The stack card, carrying a place instead of a stack: the target system as the 22px title, a meta line (pirate faction with the target icon, distance, the power holding it (gold when it pays a bounty bonus, since that's money whoever you're pledged to; otherwise in the style's accent with "· yours" when it's your own power), the best RES or a compromised nav beacon, "You've stacked here"), and on the right the thin 50px count of givers ("Imperial givers" when Refine counts one side). Beneath, state sentences: standing in the green-icon grammar ("You're **Allied** with 2 of them · about 1.3× a stranger's pay per kill"), states that cost givers in amber, then each source as a hand-in-list disclosure row (name, "Starport 166 ls · 81.0 ly from Sol", its giver count on the right) that opens to its givers, each with its standing word and its states (amber when they cost). Givers that don't count (another side under Refine, or disliking you) drop to `label-3`. How it ranks lives in a hover title on the condition line, not in the column. Refine is the app's one popover, opening over the side column it belongs to; a violet dot on its button says it's set away from the defaults.
+
 ### Hero and Motion
 The summary column opens like Weather: the current system at 20px with a violet pin, the 96px thin kill count, a 17px condition line, a `label-2` sub line and a narrow note. When a kill lands, the count replays a 0.55s tick (rises 10px from .25 opacity through imperial violet to `label`) and the range fills grow from their previous value to the new one. The other authored motion is the welcome card, once per launch (a fresh browser tab): the dashboard blurs behind a card (a .45s veil, backdrop blur 16px); a 1.5px imperial reticle ring draws itself around the emblem in 1s with four cardinal ticks; a violet radial glow blooms behind it and a white sheen sweeps across the emblem, masked to its shape; the "Her Imperial Majesty's / Anti-Piracy Network" eyebrow, on two lines like the toolbar lockup, tightens its tracking from .55em to .3em; "Welcome," and "Commander" come into focus from an 8px blur, 120ms apart; the CMDR name and a violet hairline follow. At 2.75s it dissolves (.42s, scale .97 and blur 6px) into the sharpening dashboard; any click or key skips it, and with reduced motion it simply shows for 1.6s and goes. Other transitions are functional (hover grounds .15s, switch .25s, chevron .2s, stale-data fade to .7 opacity). `prefers-reduced-motion: reduce` removes all animation and transition.
 
@@ -338,7 +351,7 @@ The summary column opens like Weather: the current system at 20px with a violet 
 - **Do** set the headline counts at 300 weight and everything else at 13 to 15px, with tabular figures.
 - **Do** separate rows with 1px hairlines rather than boxes, in the Stocks key-value manner.
 - **Do** keep the summary column sticky on desktop and collapse to the two-row toolbar and label-above-value cells below 720px.
-- **Do** use the commander's emblem raster as the mark and tab icon, with the original inline eagle only as a fallback.
+- **Do** use the commander's emblem raster as the mark, with the original inline eagle only as a fallback. The window's icon (taskbar, Alt-Tab) is the Interstellar mark like the .exe's, whatever the style, unless the commander supplies an emblem of their own.
 
 ### Don't:
 - **Don't** render state as badge chips or colored pills, and don't build orange stat tiles or other gaming-HUD chrome.

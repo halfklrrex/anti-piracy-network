@@ -3,7 +3,8 @@
 A live dashboard for pirate-massacre stacking in **Elite Dangerous**. It reads
 your game journal while you play and shows how many kills your stack really
 needs, which mission each kill is feeding, what the stack pays, and where to hand
-in. It runs on your own PC, only reads the journal, and never goes online.
+in. It runs on your own PC and only reads the journal. One page, **Recon**, goes
+online to find where to stack next; it can be switched off.
 
 It dresses as the network of whichever Powerplay power you fly for (see
 [Styles](#styles)); it works for any commander.
@@ -44,6 +45,22 @@ redirects too). If yours lives elsewhere, put a `config.json` beside the .exe (o
 ```json
 { "journal_dir": "D:\\Games\\Elite Dangerous\\journal" }
 ```
+
+### Where your settings are kept
+
+In a folder of their own beside your journals:
+`Saved Games\Frontier Developments\Elite Dangerous\Anti-Piracy Network`. It holds
+your settings (`config.json`), any kill counts you've corrected by hand
+(`offsets.json`), Recon's cache, and an emblem of your own if you add one. So
+they stay put whichever folder you run the app from, and survive an update.
+Settings → About shows the folder. Older versions kept them beside the .exe;
+they're moved here the first time you start this one. (A `config.json` saying
+where your journals are stays beside the .exe, since that's how the app finds
+them.)
+
+The app window's own browser profile, which remembers its size and place, stays
+in `%LOCALAPPDATA%\Anti-Piracy Network\window`: it's a full Edge profile, too
+big to sit beside your journals, where OneDrive or a backup tool might copy it.
 
 ## Why a stack needs counting
 
@@ -93,6 +110,13 @@ all four added together.
   +20% where they exploit (read off real cash-ins; it doesn't depend on your
   pledge). The gold figure is what they're worth cashed in there; hover it for
   the logged amount.
+- **To cash in**: every bounty you've earned and not yet cashed in, from any
+  system, and the nearest station you've docked at where they're worth more
+  ("Worth +40% at Jones Dock, Achenar · 12 ly"). Outposts are skipped when your
+  ship needs a large pad. **Where you cash in doesn't change your merits**:
+  Powerplay awards them at the kill (in the author's journal, every bounty merit
+  arrived within seconds of the kill and none after any of 12 cash-ins), and
+  cashing in at your power's Power Contact adds none.
 - **Expiry warnings**: a queued mission earns nothing until its turn. If it won't
   get its kills before its deadline at your pace, its deadline turns amber.
 - **Target check**: lock a ship and the stack says whether killing it counts,
@@ -113,10 +137,29 @@ all four added together.
   (nearest first, then nearest from each stop), with light years per leg.
 - **Hand-in station on every mission**, worked out from where you were docked when
   you took it. Turn it off under **Settings** for a tighter list.
+- **A report on every finished stack**: its group in *Ready to hand in* links to
+  the stack's own page (see Statistics).
+
+## Mini window
+
+A small panel at the top-left of your screen, above the game, so you can read
+the stack without alt-tabbing: kills to go, the stack's progress, the target
+check and any wanted alert, and if you like the next payout, credits an hour
+and mission slots. Switch it on, and choose what it shows, its size and its
+opacity, under **Settings**. Clicks go straight through it to the game (you
+can turn that off), it stays out of the taskbar and Alt-Tab, and it opens and
+closes with the app.
+
+It's only the rounded panel: everything around it is see-through, so the game
+shows right up to its edges.
+
+Nothing can show over a game in exclusive fullscreen, so set Elite's
+**Fullscreen** option to **Borderless** (Options → Graphics). Settings says so
+when it finds the game set to Fullscreen. Windows only.
 
 ## Pages
 
-Four pages, across the top:
+Five pages, across the top, and **Settings** beside them:
 
 - **Hunt**: the live stacks, everything above.
 - **Commander**: this session in full (credits earned, kills an hour, bounties,
@@ -130,10 +173,18 @@ Four pages, across the top:
   credits an hour across your recent sessions, kills by target faction, ship
   type, system and your own ship, favourites and your biggest bounty, massacre
   missions taken, handed in and failed, crew wages, deaths, and every stack
-  you've run.
+  you've run. **Materials**: everything collected from wrecks and paid as mission
+  rewards, by grade, and which ones are full or nearly (take credits instead of
+  those as mission rewards). Open any stack for **its own page**: its givers, the
+  ships you killed and flew, materials, merits from its bounty kills, and
+  **Export image** for a 1600×900 stack report card, like the session card.
 - **History**: every session, newest first, each with its date and how long
   ago. Open one for its own statistics: figures, kills by faction, ship and
-  system, the ships you flew and the stacks you worked.
+  system, the ships you flew, the materials you earned and the stacks you worked.
+- **Recon**: where to stack next (see [Recon](#recon-where-to-stack-next)).
+- **Settings**: your style, the Hunt page's options, the mini window, Recon's
+  switch, and where the app keeps its files. Saved in `config.json` in the app's
+  folder beside your journals.
 
 ### Ranks
 
@@ -160,6 +211,48 @@ treated as a break, so a stack spread over three evenings isn't credited with th
 nights in between.
 
 ![Statistics](docs/statistics.png)
+
+## Recon: where to stack next
+
+Recon finds **target systems**, each the home of a pirate faction, with the most
+**mission givers** in reach, around the system you're in (or any system you
+type). For each one it lists the source systems, their stations, and every
+giver with your standing and any state it's in.
+
+- **Only clean stacks.** Massacre missions target a pirate faction within 10 ly
+  of the station (every stack in the author's journal was within 9.9 ly). A
+  source with two pirate systems in reach splits its missions between them, so
+  Recon only shows sources whose one target is that system.
+- **Ranked by givers**: factions that aren't Anarchies, **each counted once**,
+  however many of the sources it's in (missions from one giver queue, they
+  don't stack). If the target system holds two pirate factions, missions are
+  split between them and the count is halved.
+- **States from your own journal.** Givers in an Election count for nothing:
+  in the author's journal, none of 28 givers in an election gave a massacre
+  mission, against 38% of givers in no state. Where your journal has at
+  least 15 of a state, Recon uses your own rate; otherwise War counts 0.3,
+  Famine, Outbreak and Lockdown 0.5. (Civil War showed no penalty: 5 of 10
+  gave one.) States older than 3 days are ignored; systems nobody has reported
+  for a week are left out.
+- **Standing decides ties.** Factions that dislike you (Unfriendly, Hostile)
+  offer no missions and don't count. Givers who like you pay more: in the
+  author's journal, reward per kill was about 2× at Cordial and 3× at Allied,
+  so a spot where you're known says so, and **Best pay** under Refine ranks by
+  it. Your standing comes from every journal you have, not only the last 30 days.
+- **Your ship**: pick any ship in your fleet (from your last shipyard visit);
+  a ship that needs large pads only gets sources with a starport.
+- **Refine**: count only Imperial, Federal, Alliance or independent givers;
+  only targets held by one Powerplay power; search within 50, 100 or 200 ly;
+  sort by most givers or best pay.
+
+The same places serve Deserters and Infected missions: in the author's journal
+they targeted the same pirate factions.
+
+Targets and sources come from [INTRA](https://iniv.space/intra/), factions and
+states from [EDSM](https://www.edsm.net/). The first search in an area takes
+about a minute (EDSM allows about one request a second); answers are kept for a
+few hours in the app's folder beside your journals.
+`--recon-check` prints what your own journal says (the numbers Recon uses).
 
 ## How the kill count works
 
@@ -226,6 +319,8 @@ Anti-Piracy-Network.exe --tab            # open as a browser tab, not a window
 Anti-Piracy-Network.exe --no-browser     # open nothing; run until stopped
 Anti-Piracy-Network.exe --console        # one-shot text summary, no window
 Anti-Piracy-Network.exe --verify         # every past completion: logged vs. corrected
+Anti-Piracy-Network.exe --recon Sol      # where to stack next, around Sol, as text (goes online)
+Anti-Piracy-Network.exe --recon-check    # what your journal says Recon should weigh
 Anti-Piracy-Network.exe --port 8790      # a different port
 Anti-Piracy-Network.exe --days 60        # scan further back (default 30)
 Anti-Piracy-Network.exe --any-system     # count kills regardless of system
@@ -245,7 +340,7 @@ an Anti-Piracy Network), gets the Interstellar style.
 | Power | The app becomes |
 | --- | --- |
 | A. Lavigny-Duval | Her Imperial Majesty's Anti-Piracy Network |
-| Aisling Duval | Her Highness' Anti-Piracy Network |
+| Aisling Duval | Her Imperial Highness' Anti-Piracy Network |
 | Denton Patreus | Imperial Admiralty's Anti-Piracy Network |
 | Zemina Torval | Torval Mining Ltd's Anti-Piracy Network |
 | Felicia Winters | Federal Anti-Piracy Network |
@@ -261,8 +356,10 @@ an Anti-Piracy Network), gets the Interstellar style.
 
 - **Style**: pick one under **Settings**, or leave it on **Automatic** to wear the
   style of the power you're pledged to (read from your journal).
-- **Emblem**: put a `my-emblem.png` (or `.svg`, `.webp`, `.jpg`) beside the .exe or
-  `stacker.py` and it replaces the style's emblem. It's also the browser-tab icon.
+- **Emblem**: put a `my-emblem.png` (or `.svg`, `.webp`, `.jpg`) in the app's folder
+  beside your journals (see [Where your settings are kept](#where-your-settings-are-kept))
+  and it replaces the style's emblem. It's also the window's icon
+  (taskbar and Alt-Tab), which is otherwise always the Interstellar mark.
 - **Typeface**: Saira, bundled in `fonts/` so the page never loads anything from
   the internet.
 
@@ -274,16 +371,19 @@ python build.py
 ```
 
 The result is `dist/Anti-Piracy-Network.exe`, with the dashboard, font and every style's emblem
-inside it. Your own `config.json`, `offsets.json` (hand corrections) and emblem
-live beside the .exe.
+inside it. Your own settings, corrections and emblem live in the app's folder
+beside your journals.
 
 ## Files
 
 | File | What it is |
 | --- | --- |
 | `stacker.py` | The app: reads the journal and serves the dashboard |
+| `recon.py` | Recon: asks INTRA and EDSM, ranks with your journal |
+| `miniwin.py` | The mini window: places and styles it over the game |
+| `materials.py` | Each engineering material's grade, and how many you can hold |
 | `dashboard.html` | The dashboard page |
-| `fonts/` | Saira, and its licence |
+| `fonts/` | Saira (the page's WOFF2, and a TTF for the mini window), and its licence |
 | `styles/` | Each power's emblem |
 | `build.py` | Builds the .exe |
 | `Start Anti-Piracy Network.bat` | Runs it from source on Windows |
@@ -291,15 +391,23 @@ live beside the .exe.
 
 ## Privacy
 
-Everything stays on your PC. The app only reads your journal files, never
-writes to them, and serves the dashboard to your own machine only
-(`127.0.0.1`).
+The app only reads your journal files and never writes to them; its own
+settings go in a folder of their own beside them. It serves the dashboard to
+your own machine only (`127.0.0.1`).
+
+Only **Recon** goes online. It sends INTRA a position (your reference system's
+coordinates) and EDSM system names, nothing else: never your commander name,
+your standing or anything else from your journal. Your standing is joined in on
+your PC. Turn it off under **Settings → Look up systems online**, and the app
+makes no outside connection at all.
 
 ## Credits and licence
 
 - Code: [MIT](LICENSE).
 - [Saira](https://github.com/Omnibus-Type/Saira) by Omnibus-Type, under the SIL
   Open Font License 1.1 (`fonts/OFL.txt`).
+- Material grades are game facts, checked against the author's journal and
+  cross-referenced with [EDCD's FDevIDs](https://github.com/EDCD/FDevIDs).
 - Elite Dangerous, and the Powerplay insignia used as style emblems, are
   © Frontier Developments plc. This is an unofficial fan-made tool, not
   affiliated with or endorsed by Frontier.
