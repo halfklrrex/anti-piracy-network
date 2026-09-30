@@ -389,38 +389,56 @@ def mission_shares(missions, kills, now):
     count for each kill until then. A mission that fails, is abandoned or runs
     out pays nothing and earns nothing, though it held the front while it lasted.
 
-    `missions`: dicts of giver, target, system, accepted, kills (the count
-    asked for), reward, finished (the kills done), stopped (failed or
-    abandoned) and expiry. `kills`: (timestamp, victim faction, system)."""
+    Which of those kills the game counted is the credit frame's call, as on
+    the Hunt page (see CreditFrame): every completion pins how many of the
+    kills logged on its stream had been counted by then, and a kill the game
+    didn't count earns nothing. So a finished mission shares its reward over
+    exactly the kills it asked for.
+
+    `missions`: dicts of giver, target, type (the ships asked for), system,
+    accepted, kills (the count asked for), reward, finished (the kills done),
+    stopped (failed, abandoned or dropped) and expiry. `kills`: (timestamp,
+    victim faction, system)."""
     times_of = {}
     for ts, faction, system in kills:
         if ts:
             times_of.setdefault((faction, system), []).append(ts)
     for times in times_of.values():
         times.sort()
-    queues = {}
+    streams = {}
     for m in missions:
         if m["accepted"]:
-            queues.setdefault((m["giver"], m["target"], m["system"]), []).append(m)
+            streams.setdefault((m["target"], m["type"], m["system"]), []).append(m)
     shares = []
-    for (_, target, system), queue in queues.items():
-        times = times_of.get((target, system), [])
-        front_from = None                 # when the front came free for the next in line
-        for m in sorted(queue, key=lambda m: m["accepted"]):
+    for (target, _, system), members in streams.items():
+        frame = CreditFrame(times_of.get((target, system), []))
+        runs, free_at = [], {}            # free_at: when each giver's front comes free
+        for m in sorted(members, key=lambda m: m["accepted"]):
             ran_out = not m["finished"] and m["expiry"] and m["expiry"] <= now
             left = m["finished"] or m["stopped"] or (m["expiry"] if ran_out else None) or now
-            start = min(max(m["accepted"], front_from or m["accepted"]), left)
-            front_from = max(front_from or left, left)
+            free = free_at.get(m["giver"])
+            anchor = min(max(m["accepted"], free), left) if free else m["accepted"]
+            free_at[m["giver"]] = max(free or left, left)
+            runs.append((m, anchor, left, ran_out))
+        for m, anchor, _, _ in sorted((r for r in runs if r[0]["finished"]), key=lambda r: r[0]["finished"]):
+            lo, hi = frame.start(m, anchor), frame.upto(m["finished"])
+            if hi >= lo:
+                frame.pin(hi, frame.at(lo) + (m["kills"] or 0))
+        counted = [frame.at(p) for p in range(frame.n + 1)]
+        for m, anchor, left, ran_out in runs:
             if m["stopped"] or ran_out:
                 continue
-            won = times[bisect_right(times, start):bisect_right(times, left)]
+            lo, hi = frame.start(m, anchor), frame.upto(left)
+            won = [(frame.times[p], counted[p + 1] - counted[p]) for p in range(lo, hi)
+                   if counted[p + 1] > counted[p]]
+            got = sum(d for _, d in won)
             if m["finished"]:
-                if won:
-                    shares += [(t, m["reward"] / len(won)) for t in won]
+                if got:
+                    shares += [(t, m["reward"] * d / got) for t, d in won]
                 else:                         # none of its kills in this journal
                     shares.append((m["finished"], m["reward"]))
-            elif won:
-                shares += [(t, m["reward"] / max(m["kills"] or 1, len(won))) for t in won]
+            elif got:
+                shares += [(t, m["reward"] * d / max(m["kills"] or 1, got)) for t, d in won]
     shares.sort(key=lambda s: s[0])
     return shares
 
@@ -1445,8 +1463,8 @@ class Tracker:
             dropped = (held is not None and not reason and mid not in held
                        and m["accepted"] and m["accepted"] < snap["ts"])
             missions.append({
-                "giver": m["giver"], "target": m["target_faction"], "system": m["system"],
-                "accepted": m["accepted"], "kills": m["kill_count"],
+                "giver": m["giver"], "target": m["target_faction"], "type": m["target_type"],
+                "system": m["system"], "accepted": m["accepted"], "kills": m["kill_count"],
                 "reward": self.paid_for.get(mid, m["reward"]),
                 "finished": self.redirected.get(mid) or (ended_at if reason == "Completed" else None),
                 "stopped": ended_at if reason in ("Failed", "Abandoned") else snap["ts"] if dropped else None,
@@ -2303,7 +2321,8 @@ def build_history(journal_dir):
     # What each session's kills earned in missions, as they were made (see
     # mission_shares), rather than what happened to be handed in during it.
     shares = mission_shares([{
-        "giver": a.get("Faction"), "target": a.get("TargetFaction"), "system": a.get("DestinationSystem"),
+        "giver": a.get("Faction"), "target": a.get("TargetFaction"),
+        "type": a.get("TargetType_Localised") or "Ships", "system": a.get("DestinationSystem"),
         "accepted": parse_ts(a.get("timestamp")), "kills": a.get("KillCount") or 0,
         "reward": (completed[m].get("Reward") or 0) if m in completed else a.get("Reward") or 0,
         "finished": redirected.get(m) or (parse_ts(completed[m].get("timestamp")) if m in completed else None),

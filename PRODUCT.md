@@ -87,7 +87,11 @@ screen is traceable to a journal event.
   not at hand-in (`mission_shares`): a kill counts for the mission at the front
   of each giver's queue against its faction in its system, and earns that
   mission's reward over the kills it took (over its kill count while it's
-  still being worked). Counting at hand-in showed a stacking session at about
+  still being worked). Which logged kills the game counted is the credit
+  frame's call, as on the Hunt page: each completion pins the count, so a
+  finished mission shares its reward over exactly the kills it asked for
+  (108 of 117 in the last 30 days; the rest one or two short, where the game
+  counted kills it wrote no bounty for). Counting at hand-in showed a stacking session at about
   a seventh of what it earned (14M against 107M an hour on 2026-09-30), since a
   stack's money is paid sessions after it's earned. Missions that fail, are
   abandoned, run out or that the game drops unclaimed (gone from its list at
