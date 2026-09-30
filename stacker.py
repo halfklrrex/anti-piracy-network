@@ -369,12 +369,23 @@ def powerplay_threshold(rank):
     return early.get(rank, 15000 + 8000 * (rank - 5))
 
 
-def active_hours(times, gap_cap=timedelta(minutes=10)):
+def active_hours(times, gap_cap=timedelta(minutes=10), away=()):
     """Time actually spent hunting: the gaps between consecutive kills, with any
     gap longer than `gap_cap` counted as a break. Measuring first kill to last
-    instead counts every pause, and every night of a multi-day stack."""
+    instead counts every pause, and every night of a multi-day stack. Time out
+    of the game (`away`: (left, back) spans, from leaving to loading back in,
+    oldest first) comes out of a gap before the cap, so a night off adds
+    nothing."""
     times = sorted(t for t in times if t)
-    return sum(min(b - a, gap_cap).total_seconds() for a, b in zip(times, times[1:])) / 3600
+    lefts = [left for left, _ in away]
+    total = 0.0
+    for a, b in zip(times, times[1:]):
+        gap = b - a
+        for left, back in away[bisect_left(lefts, a):bisect_right(lefts, b)]:
+            if back <= b:
+                gap -= back - left
+        total += min(max(gap, timedelta(0)), gap_cap).total_seconds()
+    return total / 3600
 
 
 def mission_shares(missions, kills, now):
@@ -559,6 +570,7 @@ class Tracker:
         self.commander = None
         self.last_event = None
         self.left_at = None       # when you last left the game (menu, quit or crash)
+        self.away = []            # (left, back): each spell out of the game, oldest first
 
         # Beyond the stack itself: what else the journal says about the hunt.
         self.bounties = []        # (timestamp, star_system, credits, "bounty" | "bond"), every kill paid
@@ -747,14 +759,21 @@ class Tracker:
         ts = parse_ts(ev.get("timestamp"))
         if name in FIGHT_BREAKS:
             self.fight += 1
+        # A new file is a new start of the game (after a crash, if nothing said
+        # you left), unless it's the game carrying on in a second part of a
+        # long journal.
+        restart = name == "Fileheader" and (ev.get("part") or 1) <= 1
+        away = bool(self.left_at) or restart      # the time up to this line was out of the game
         if not self.left_at and (name == "Shutdown" or (name == "Music" and ev.get("MusicTrack") == "MainMenu")):
             self.left_at = ts                             # back to the menu, or quitting (the first time)
-        elif name == "Fileheader" and not self.left_at:
+        elif restart and not self.left_at:
             self.left_at = self.last_event                # a crash: the last line before this file
         if ts:
             # Session time counts gaps between events, any gap over 10 minutes
-            # as a break -- a game left open overnight isn't a 19-hour session.
-            if self.last_event and self.session_start and ts >= self.session_start:
+            # as a break -- a game left open overnight isn't a 19-hour session --
+            # and only while you're in the game: from loading in until the main
+            # menu, quitting or a crash, so a relog doesn't count the time away.
+            if self.last_event and self.session_start and ts >= self.session_start and not away:
                 self.session_active += min((ts - self.last_event).total_seconds(), 600)
             self.last_event = ts
 
@@ -785,6 +804,8 @@ class Tracker:
             # A relog within half an hour is the same session (see SESSION_GAP).
             if not (self.session_start and self.left_at and ts and ts - self.left_at < SESSION_GAP):
                 self.session_start, self.session_active = ts, 0.0
+            if self.left_at and ts and ts > self.left_at:
+                self.away.append((self.left_at, ts))
             self.left_at = None
 
         elif name == "Powerplay":
@@ -1236,7 +1257,7 @@ class Tracker:
         start = self.session_start
         times = [ts for ts, victim, where in self.kills
                  if victim == faction and where == system and ts and start and ts >= start]
-        hours = active_hours(times)
+        hours = active_hours(times, away=self.away)
         # A handful of kills in one fight says nothing about an hour's pace.
         if len(times) >= 10 and hours >= 0.2:
             return {"per_hour": round((len(times) - 1) / hours, 1), "source": "session"}
@@ -1953,6 +1974,7 @@ def build_history(journal_dir):
     combat_rank, combat_prev, ship_kills, combat_segments = None, None, 0, []
     detail, crew, deaths, flying = [], [], [], None    # for the statistics page
     left_at = None
+    offline = []          # (left, back): each spell out of the game, for stacks' hunting time
     # For Recon: your standing with every faction you've ever met, where
     # systems are, your fleet, and what your own stacking says about how the
     # game hands out massacre missions (see recon_evidence).
@@ -1991,15 +2013,19 @@ def build_history(journal_dir):
         # back to the main menu or quitting -- or, after a crash, from the
         # last line before the next journal file.
         kind = e.get("event") if e is not None else None
+        restart = kind == "Fileheader" and (e.get("part") or 1) <= 1     # not a long journal's next part
+        away = bool(left_at) or restart           # the time up to this line was out of the game
         if kind in ("Shutdown", "Music") and session and not left_at and (
                 kind == "Shutdown" or e.get("MusicTrack") == "MainMenu"):
             left_at = ts          # the first time you left; the menu at launch comes later
-        elif kind == "Fileheader" and session and not left_at:
+        elif restart and session and not left_at:
             left_at = session["end"]
         if kind == "LoadGame" and session and left_at:
             session["end"] = left_at
         rejoined = kind == "LoadGame" and session and left_at and ts - left_at < SESSION_GAP
         if kind == "LoadGame":
+            if left_at and ts > left_at:
+                offline.append((left_at, ts))
             left_at = None
         if kind == "LoadGame" and not rejoined:
             session = {"start": ts, "end": ts, "active": 0.0, "kills": 0, "bounties": 0,
@@ -2008,8 +2034,11 @@ def build_history(journal_dir):
                        "systems": {}, "flew": {}, "materials": {}}
             sessions.append(session)
         elif session:
-            # Same rule as the live tracker: gaps over 10 minutes are breaks.
-            session["active"] += min(max((ts - session["end"]).total_seconds(), 0), 600)
+            # Same rule as the live tracker: gaps over 10 minutes are breaks,
+            # and time out of the game (menu, quit, crash) until you load back
+            # in isn't play, even when a relog continues the session.
+            if not away:
+                session["active"] += min(max((ts - session["end"]).total_seconds(), 0), 600)
             session["end"] = ts
         last_ts = ts
         if e is None:
@@ -2245,8 +2274,8 @@ def build_history(journal_dir):
         for m in mids:
             giver = accepted[m].get("Faction")
             per_giver[giver] = per_giver.get(giver, 0) + (accepted[m].get("KillCount") or 0)
-        hours = active_hours([k[0] for k in window])
-        t_hours = active_hours([k[0] for k in targets])
+        hours = active_hours([k[0] for k in window], away=offline)
+        t_hours = active_hours([k[0] for k in targets], away=offline)
         income = paid + bounties + bonds          # "all-in": everything the stack paid
         # For the stack's own page and report card.
         fought = [d for d in detail if d[3] == where and d[0] and run["start"] <= d[0] <= hunt_end]

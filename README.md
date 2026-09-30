@@ -227,7 +227,9 @@ Five pages, across the top, and **Settings** beside them:
 
 Hunting time counts the gaps between events, with any pause over 10 minutes
 treated as a break, so a stack spread over three evenings isn't credited with the
-nights in between.
+nights in between. Only time in the game counts: from loading in until you go
+back to the main menu, quit or crash. A relog within half an hour carries on the
+same session, but the minutes away from it aren't play.
 
 ![Statistics](docs/statistics.png)
 
