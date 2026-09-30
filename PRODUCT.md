@@ -82,6 +82,17 @@ screen is traceable to a journal event.
 - Standing with each mission provider (last reading on a jump into its space,
   plus the "+" from missions handed in since, at the commander's measured rate),
   mission slots against the cap of 20, and a "this session" strip.
+- Session earnings (Hunt's strip, Commander, the mini window's credits an
+  hour, History, the Statistics chart) count missions as their kills are made,
+  not at hand-in (`mission_shares`): a kill counts for the mission at the front
+  of each giver's queue against its faction in its system, and earns that
+  mission's reward over the kills it took (over its kill count while it's
+  still being worked). Counting at hand-in showed a stacking session at about
+  a seventh of what it earned (14M against 107M an hour on 2026-09-30), since a
+  stack's money is paid sessions after it's earned. Missions that fail, are
+  abandoned, run out or that the game drops unclaimed (gone from its list at
+  log-in) earn nothing. What was handed in stays on hover. Stacks keep what
+  they actually paid.
 - Ranks: combat rank with this session's estimated gain and kills to the next
   rank (progress is logged only at log-in; the gain uses the commander's own
   kills-per-percent at this rank), Imperial Navy rank with an estimate of what handing in

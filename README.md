@@ -141,8 +141,14 @@ all four added together.
   Allied…). The journal only states it when you jump into that faction's space,
   so missions handed in since are added from their "+" marks, at the rate your
   own journal shows (about 4 points each).
-- **This session**: time, kills, bounties, mission pay, merits and credits an
-  hour, in a strip above the stacks.
+- **This session**: time, kills, bounties, missions, merits and credits an
+  hour, in a strip above the stacks. Missions count as you earn them, not when
+  you hand them in: each kill earns its share of every mission it counts for
+  (a mission's reward over its kills), so an hour of fighting shows what it
+  was worth even while the money waits at the station. What you've handed in
+  this session shows when you point at Missions. Missions that fail, are
+  abandoned, run out or that the game drops unclaimed earn nothing, since they
+  never pay. History and the Statistics chart count sessions the same way.
 - **Mission slots** used, against the game's limit of 20.
 - **Ready to hand in**: finished missions grouped by station, in route order
   (nearest first, then nearest from each stop), with light years per leg.
@@ -176,7 +182,7 @@ Five pages, across the top, and **Settings** beside them:
 
 - **Hunt**: the live stacks, everything above.
 - **Commander**: this session in full (credits earned, kills an hour, bounties,
-  bonds, mission pay, merits and your **crew share**, what your NPC fighter pilot
+  bonds, missions, merits and your **crew share**, what your NPC fighter pilot
   has been paid as you cashed in), a **Copy session summary** button for Discord
   or a squadron log, **Export image** for a 1600×900 PNG session card in your
   style's colours and emblem (save it, or copy it straight into Discord), your ranks, and every faction you hold missions from or

@@ -977,6 +977,12 @@ const crM = (n) => ((n || 0) >= 1e6 ? `${((n || 0) / 1e6).toFixed(1)}M` : cr(n))
 // full figure that would sit unreadably beside "35.1M".
 const colM = (n) => ((n || 0) < 50000 ? "<0.1M" : `${((n || 0) / 1e6).toFixed(1)}M`);
 // Gold, with the logged figure on hover, when a Powerplay bonus lifts bounties.
+// A session's missions count as its kills earn them (see mission_shares in
+// stacker.py), not when they're handed in: most of a stack's money is earned
+// sessions before it's paid. What was handed in is in the tooltip.
+const sessionMissions = (se) => se.missions_earned ?? se.mission_credits ?? 0;
+const missionsTip = (handed) => ` title="${esc(`What this session's kills earned in the missions they counted for, as they were made${
+  handed ? `; ${cr(handed)} Cr handed in` : "; none handed in yet"}`)}"`;
 const bonusTip = (logged, paid) => (paid && logged && paid > logged
   ? ` class="gold" title="${cr(logged)} Cr logged; worth ${cr(paid)} Cr cashed in where they were earned, with its Powerplay bounty bonus"` : "");
 // Stat-cell money, Stocks style: 41.3M, 590K. The full figure is in the tooltip.
@@ -1429,9 +1435,9 @@ function renderNow(s) {
       ["Kills", cr(se.kills)],
       ["Bounties", `${cr(se.bounties_paid ?? se.bounties)} Cr`, bonusTip(se.bounties, se.bounties_paid)],
       ...(se.bonds ? [["Combat bonds", `${cr(se.bonds)} Cr`]] : []),
-      ["Mission pay", se.mission_credits ? `${cr(se.mission_credits)} Cr` : "—"],
+      ["Missions", sessionMissions(se) ? `${cr(sessionMissions(se))} Cr` : "—", missionsTip(se.mission_credits)],
       ["Merits", se.merits ? `+${cr(se.merits)}` : "—"],
-      ["Per hour", se.kills || se.mission_credits ? `${cr(se.credits_per_hour)} Cr` : "—"],
+      ["Per hour", se.kills || sessionMissions(se) ? `${cr(se.credits_per_hour)} Cr` : "—"],
     ];
     html += `<div class="ticker">${items.map(([k, v, tip]) => `<div><span>${k}</span><b${tip || ""}>${v}</b></div>`).join("")}</div>`;
   }
@@ -1540,7 +1546,7 @@ const card = (title, body, note = "") => `
     <header class="stack-head"><div class="stack-id"><h2>${title}</h2>${note ? `<p class="stack-pay">${note}</p>` : ""}</div></header>
     ${body}
   </article>`;
-const sessionEarned = (s) => (s.bounties || 0) + (s.bonds || 0) + (s.paid || 0);
+const sessionEarned = (s) => (s.bounties || 0) + (s.bonds || 0) + (s.missions_earned ?? s.paid ?? 0);
 const dayLabel = (iso) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 const clock = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 function ago(iso) {
@@ -1558,7 +1564,7 @@ function ago(iso) {
 function renderCommander(s) {
   const se = s.session;
   const bounties = se ? (se.bounties_paid ?? se.bounties) : 0;
-  const earned = se ? bounties + se.bonds + se.mission_credits : 0;
+  const earned = se ? bounties + se.bonds + sessionMissions(se) : 0;
   $("cside").innerHTML = se ? `
     <section class="hero">
       <p class="place">${icon("clock")}This session</p>
@@ -1571,7 +1577,7 @@ function renderCommander(s) {
       ["Per hour", earned ? `${cr(se.credits_per_hour)} Cr` : "—"],
       ["Bounties", bounties ? `${cr(bounties)} Cr` : "—", bonusTip(se.bounties, se.bounties_paid)],
       ["Combat bonds", se.bonds ? `${cr(se.bonds)} Cr` : "—"],
-      ["Mission pay", se.mission_credits ? `${cr(se.mission_credits)} Cr` : "—"],
+      ["Missions", sessionMissions(se) ? `${cr(sessionMissions(se))} Cr` : "—", missionsTip(se.mission_credits)],
       ["Merits", se.merits ? `+${cr(se.merits)}` : "—"],
       ["Crew share", se.crew ? `${cr(se.crew)} Cr` : "—",
        se.crew_names && se.crew_names.length ? ` title="${esc(`Paid to ${se.crew_names.join(" and ")} as you cashed in`)}"` : ""],
@@ -1696,7 +1702,7 @@ async function drawCard({ eyebrow, dateLine, headline, headlineLabel, byline, ri
 function drawSessionCard(s) {
   const se = s.session;
   const bounties = se.bounties_paid ?? se.bounties;
-  const earned = bounties + se.bonds + se.mission_credits;
+  const earned = bounties + se.bonds + sessionMissions(se);
   const bars = [];
   if (s.combat) bars.push([s.combat.title, s.combat.next || "", s.combat.progress / 100, (s.combat.gain || 0) / 100,
     `${s.combat.progress}%${s.combat.gain ? ` · +${s.combat.gain}% this session` : ""}`]);
@@ -1719,7 +1725,7 @@ function drawSessionCard(s) {
       ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
       ["Per hour", earned ? `${short(se.credits_per_hour)} Cr` : "—"],
       ["Bounties", bounties ? `${short(bounties)} Cr` : "—", se.bounties_paid > se.bounties],
-      ["Mission pay", se.mission_credits ? `${short(se.mission_credits)} Cr` : "—"],
+      ["Missions", sessionMissions(se) ? `${short(sessionMissions(se))} Cr` : "—"],
       se.bonds && ["Combat bonds", `${short(se.bonds)} Cr`],
       se.merits && ["Merits", `+${cr(se.merits)}`],
       se.crew && ["Crew share", `${short(se.crew)} Cr`],
@@ -1801,7 +1807,7 @@ function sessionSummary(s) {
   const lines = [
     `${style} — session of ${new Date(se.started).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`,
     `CMDR ${s.commander || "?"} · ${dur(se.hours)} of play · ${cr(se.kills)} kills (${cr(se.kills_per_hour)} an hour)`,
-    `Bounties ${cr(bounties)} Cr · Mission pay ${cr(se.mission_credits)} Cr${se.bonds ? ` · Combat bonds ${cr(se.bonds)} Cr` : ""}`,
+    `Bounties ${cr(bounties)} Cr · Missions ${cr(sessionMissions(se))} Cr${se.bonds ? ` · Combat bonds ${cr(se.bonds)} Cr` : ""}`,
     `${cr(se.credits_per_hour)} Cr an hour${se.merits ? ` · +${cr(se.merits)} merits` : ""}${se.crew ? ` · crew share ${cr(se.crew)} Cr` : ""}`,
   ];
   const ranks = [];
@@ -2013,12 +2019,14 @@ function renderHistory(h) {
   const s = pick, earned = sessionEarned(s);
   const figures = [
     ["Kills", cr(s.kills)], ["Per hour", s.hours >= 0.25 ? `${short(earned / s.hours)} Cr` : "—"],
-    ["Bounties", s.bounties ? short(s.bounties) : "—"], ["Mission pay", s.paid ? short(s.paid) : "—"],
+    ["Bounties", s.bounties ? short(s.bounties) : "—"],
+    ["Missions", (s.missions_earned ?? s.paid) ? short(s.missions_earned ?? s.paid) : "—", missionsTip(s.paid)],
     ...(s.bonds ? [["Combat bonds", short(s.bonds)]] : []),
     ["Merits", s.merits ? `+${cr(s.merits)}` : "—"],
     ...(s.bounty_merits ? [["From bounties", `+${cr(s.bounty_merits)}`]] : []),
     ["Crew share", s.crew ? short(s.crew) : "—"],
-    ["Missions taken", cr(s.accepted || 0)], ["Handed in", cr(s.massacres || 0)],
+    ["Missions taken", cr(s.accepted || 0)],
+    ["Handed in", cr(s.massacres || 0), s.paid ? ` title="${cr(s.paid)} Cr"` : ""],
     ...(s.deaths ? [["Deaths", cr(s.deaths)]] : []),
   ];
   $("hmain").innerHTML = `
@@ -2027,7 +2035,7 @@ function renderHistory(h) {
       <header class="stack-head"><div class="stack-id">
         <h2>${new Date(s.start).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h2>
         <p class="stack-meta"><span>${ago(s.start)}</span><span>${clock(s.start)}–${clock(s.end)}</span><span>${dur(s.hours)} of play</span></p>
-        <dl class="stats">${figures.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+        <dl class="stats">${figures.map(([k, v, tip]) => `<div><dt>${k}</dt><dd${tip || ""}>${v}</dd></div>`).join("")}</dl>
       </div>
       <div class="stack-num"><b>${crM(earned)}</b><span>credits earned</span></div></header>
     </article>

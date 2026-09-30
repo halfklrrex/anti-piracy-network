@@ -377,6 +377,54 @@ def active_hours(times, gap_cap=timedelta(minutes=10)):
     return sum(min(b - a, gap_cap).total_seconds() for a, b in zip(times, times[1:])) / 3600
 
 
+def mission_shares(missions, kills, now):
+    """What each kill earned in massacre missions, as (timestamp, credits):
+    counted when the kill is made, not when the mission is handed in, so an
+    hour of fighting is worth what it earned.
+
+    A kill counts for the mission at the front of each giver's queue against
+    its faction in its system (the game's stacking rule), so each mission's
+    reward is shared out over the kills made while it was at the front: all
+    of it once the game says its kills are done, and its reward over its kill
+    count for each kill until then. A mission that fails, is abandoned or runs
+    out pays nothing and earns nothing, though it held the front while it lasted.
+
+    `missions`: dicts of giver, target, system, accepted, kills (the count
+    asked for), reward, finished (the kills done), stopped (failed or
+    abandoned) and expiry. `kills`: (timestamp, victim faction, system)."""
+    times_of = {}
+    for ts, faction, system in kills:
+        if ts:
+            times_of.setdefault((faction, system), []).append(ts)
+    for times in times_of.values():
+        times.sort()
+    queues = {}
+    for m in missions:
+        if m["accepted"]:
+            queues.setdefault((m["giver"], m["target"], m["system"]), []).append(m)
+    shares = []
+    for (_, target, system), queue in queues.items():
+        times = times_of.get((target, system), [])
+        front_from = None                 # when the front came free for the next in line
+        for m in sorted(queue, key=lambda m: m["accepted"]):
+            ran_out = not m["finished"] and m["expiry"] and m["expiry"] <= now
+            left = m["finished"] or m["stopped"] or (m["expiry"] if ran_out else None) or now
+            start = min(max(m["accepted"], front_from or m["accepted"]), left)
+            front_from = max(front_from or left, left)
+            if m["stopped"] or ran_out:
+                continue
+            won = times[bisect_right(times, start):bisect_right(times, left)]
+            if m["finished"]:
+                if won:
+                    shares += [(t, m["reward"] / len(won)) for t in won]
+                else:                         # none of its kills in this journal
+                    shares.append((m["finished"], m["reward"]))
+            elif won:
+                shares += [(t, m["reward"] / max(m["kills"] or 1, len(won))) for t in won]
+    shares.sort(key=lambda s: s[0])
+    return shares
+
+
 def standing(rep):
     """The game's reputation bands for a faction (MyReputation, -100..100)."""
     if rep is None:
@@ -481,6 +529,7 @@ class Tracker:
         self.missions = {}        # MissionID -> accepted details
         self.ended = {}           # MissionID -> (reason, timestamp)
         self.redirected = {}      # MissionID -> timestamp (objective complete)
+        self.paid_for = {}        # MissionID -> credits it paid (less, if you took materials)
         self.turn_in = {}         # MissionID -> {system, station}
         self.kills = []           # (timestamp, victim_faction, star_system)
         self.kill_fight = []      # the fight each kill was in, index for index
@@ -823,6 +872,8 @@ class Tracker:
                 self.ended[mid] = (name.replace("Mission", ""), ts)
             if name == "MissionCompleted":
                 self.paid.append((ts, ev.get("Reward") or 0))
+                if mid is not None:
+                    self.paid_for[mid] = ev.get("Reward") or 0
                 for fe in ev.get("FactionEffects") or []:
                     marks = len(str(fe.get("Reputation") or ""))
                     if fe.get("Faction") and marks:
@@ -1381,6 +1432,27 @@ class Tracker:
                 "pledged": self.power.get("name"),
                 "result": result}
 
+    def mission_shares(self):
+        """This journal's massacre missions, shared out over their kills (see
+        mission_shares)."""
+        # The game drops a mission nobody hands in without a word; the list it
+        # writes at log-in is the only sign (see classify). It pays nothing.
+        snap = self.snapshot
+        held = set(snap["active"] + snap["complete"]) if snap and snap["ts"] else None
+        missions = []
+        for mid, m in self.missions.items():
+            reason, ended_at = self.ended.get(mid, (None, None))
+            dropped = (held is not None and not reason and mid not in held
+                       and m["accepted"] and m["accepted"] < snap["ts"])
+            missions.append({
+                "giver": m["giver"], "target": m["target_faction"], "system": m["system"],
+                "accepted": m["accepted"], "kills": m["kill_count"],
+                "reward": self.paid_for.get(mid, m["reward"]),
+                "finished": self.redirected.get(mid) or (ended_at if reason == "Completed" else None),
+                "stopped": ended_at if reason in ("Failed", "Abandoned") else snap["ts"] if dropped else None,
+                "expiry": m["expiry"]})
+        return mission_shares(missions, self.kills, utcnow())
+
     def session_summary(self):
         start = self.session_start
         if not start:
@@ -1392,6 +1464,9 @@ class Tracker:
                                 for c, kind, where in hunt if kind == "bounty"))
         bonds = sum(c for c, kind, _ in hunt if kind == "bond")
         paid = sum(c for ts, c in self.paid if ts and ts >= start)
+        # Missions count as their kills are made, not when they're handed in:
+        # most of a stack's money is earned sessions before it's paid.
+        earned = round(sum(c for ts, c in self.mission_shares() if ts >= start))
         return {
             "started": iso(start),
             "hours": round(hours, 3),
@@ -1400,8 +1475,9 @@ class Tracker:
             "bounties": bounty,
             "bounties_paid": bounty_paid,
             "bonds": bonds,
-            "mission_credits": paid,
-            "credits_per_hour": int((bounty_paid + bonds + paid) / hours),
+            "mission_credits": paid,           # handed in this session
+            "missions_earned": earned,         # earned by this session's kills
+            "credits_per_hour": int((bounty_paid + bonds + earned) / hours),
             "merits": sum(m for ts, m in self.merits if ts and ts >= start),
             "crew": sum(a for ts, _, a in self.crew_wages if ts and ts >= start),
             "crew_names": sorted({n for ts, n, a in self.crew_wages if ts and ts >= start}),
@@ -1808,6 +1884,8 @@ HISTORY_EVENTS = {b'"MissionAccepted"', b'"MissionCompleted"', b'"MissionFailed"
                   b'"SellShipOnRebuy"', b'"ShipyardBuy"', b'"SetUserShipName"',
                   # Bounties to cash in.
                   b'"RedeemVoucher"',
+                  # The game's list of your missions at log-in: what it has dropped unpaid.
+                  b'"Missions"',
                   # Materials: the inventory at each log-in, and what adds or spends it.
                   b'"Materials"', b'"MaterialCollected"', b'"MaterialDiscarded"', b'"MaterialTrade"',
                   b'"EngineerCraft"', b'"Synthesis"', b'"TechnologyBroker"', b'"EngineerContribution"',
@@ -1852,6 +1930,7 @@ def build_history(journal_dir):
     system, rank, session, since = None, None, None, None
     kills, merits, sessions = [], [], []
     accepted, completed, failed, redirected, allegiance = {}, {}, {}, {}, {}
+    open_massacres, dropped = set(), {}     # dropped: gone from the list at log-in, never paid
     segments, prev_progress, done_since = [], None, []   # Imperial rank measurements
     combat_rank, combat_prev, ship_kills, combat_segments = None, None, 0, []
     detail, crew, deaths, flying = [], [], [], None    # for the statistics page
@@ -2027,11 +2106,17 @@ def build_history(journal_dir):
             if session:
                 session["merits"] += gained
                 session["bounty_merits"] += gained if from_bounty else 0
+        elif ev == "Missions":
+            held = {m.get("MissionID") for m in (e.get("Active") or []) + (e.get("Complete") or [])}
+            for m in [m for m in open_massacres if m not in held]:
+                dropped[m] = ts
+                open_massacres.discard(m)
         elif ev == "MissionAccepted" and mid is not None:
             accepted[mid] = e
             if session:
                 session["accepted"] += 1
             if str(e.get("Name") or "").startswith(MASSACRE_PREFIX):
+                open_massacres.add(mid)
                 giver = e.get("Faction")
                 if visit:
                     visit["gave"].add(giver)
@@ -2042,6 +2127,7 @@ def build_history(journal_dir):
                     pay.append((standing(reading[1]), (e.get("Reward") or 0) / e["KillCount"]))
         elif ev == "MissionCompleted" and mid is not None:
             completed[mid] = e
+            open_massacres.discard(mid)
             done_since.append(mid)
             for m in e.get("MaterialsReward") or []:
                 got = move(m.get("Name"), m.get("Count") or 0, m.get("Name_Localised"))
@@ -2056,6 +2142,7 @@ def build_history(journal_dir):
                     session["massacres"] += 1
         elif ev in ("MissionFailed", "MissionAbandoned") and mid is not None:
             failed[mid] = ts
+            open_massacres.discard(mid)
         elif ev == "MissionRedirected" and mid is not None:
             redirected.setdefault(mid, ts)
         elif ev == "Rank":
@@ -2213,6 +2300,21 @@ def build_history(journal_dir):
                       if str(c.get("Name") or "").startswith(MASSACRE_PREFIX)]
     hunts = [s for s in sessions if s["kills"] or s["massacres"]]
 
+    # What each session's kills earned in missions, as they were made (see
+    # mission_shares), rather than what happened to be handed in during it.
+    shares = mission_shares([{
+        "giver": a.get("Faction"), "target": a.get("TargetFaction"), "system": a.get("DestinationSystem"),
+        "accepted": parse_ts(a.get("timestamp")), "kills": a.get("KillCount") or 0,
+        "reward": (completed[m].get("Reward") or 0) if m in completed else a.get("Reward") or 0,
+        "finished": redirected.get(m) or (parse_ts(completed[m].get("timestamp")) if m in completed else None),
+        "stopped": failed.get(m) or dropped.get(m), "expiry": parse_ts(a.get("Expiry")),
+    } for m, a in accepted.items() if str(a.get("Name") or "").startswith(MASSACRE_PREFIX)],
+        [(k[0], k[1], k[2]) for k in kills], utcnow())
+    share_times = [t for t, _ in shares]
+    for s in sessions:
+        lo, hi = bisect_left(share_times, s["start"]), bisect_right(share_times, s["end"])
+        s["missions_earned"] = round(sum(c for _, c in shares[lo:hi]))
+
     def top(pairs, n=8):
         return [{"name": k, "count": v} for k, v in sorted(pairs.items(), key=lambda kv: -kv[1])[:n]]
 
@@ -2278,7 +2380,7 @@ def build_history(journal_dir):
         return {
             "start": iso(s["start"]), "end": iso(s["end"]), "hours": round(s["active"] / 3600, 2),
             "kills": s["kills"], "bounties": s["bounties"], "bonds": s["bonds"],
-            "bond_kills": s["bond_kills"], "paid": s["paid"],
+            "bond_kills": s["bond_kills"], "paid": s["paid"], "missions_earned": s["missions_earned"],
             "merits": s["merits"], "bounty_merits": s["bounty_merits"], "massacres": s["massacres"],
             "materials": sorted((mat_row(sym, n) for sym, n in s["materials"].items()), key=lambda r: -r["count"]),
             "crew": s["crew"], "deaths": s["deaths"], "accepted": s["accepted"],
