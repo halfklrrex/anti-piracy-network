@@ -96,7 +96,9 @@ screen is traceable to a journal event.
   stack's money is paid sessions after it's earned. Missions that fail, are
   abandoned, run out or that the game drops unclaimed (gone from its list at
   log-in) earn nothing. What was handed in stays on hover. Stacks keep what
-  they actually paid.
+  they actually paid. Credits an hour waits for 15 minutes of play, as
+  History's does; the commander saw it swing between 30M and 60M a few
+  minutes into a session.
 - Ranks: combat rank with this session's estimated gain and kills to the next
   rank (progress is logged only at log-in; the gain uses the commander's own
   kills-per-percent at this rank), Imperial Navy rank with an estimate of what handing in

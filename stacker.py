@@ -1516,7 +1516,9 @@ class Tracker:
             "bonds": bonds,
             "mission_credits": paid,           # handed in this session
             "missions_earned": earned,         # earned by this session's kills
-            "credits_per_hour": int((bounty_paid + bonds + earned) / hours),
+            # Not before 15 minutes of play, as History: before then one kill
+            # swings it by millions.
+            "credits_per_hour": int((bounty_paid + bonds + earned) / hours) if hours >= 0.25 else None,
             "merits": sum(m for ts, m in self.merits if ts and ts >= start),
             "crew": sum(a for ts, _, a in self.crew_wages if ts and ts >= start),
             "crew_names": sorted({n for ts, n, a in self.crew_wages if ts and ts >= start}),

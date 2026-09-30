@@ -149,6 +149,8 @@ all four added together.
   this session shows when you point at Missions. Missions that fail, are
   abandoned, run out or that the game drops unclaimed earn nothing, since they
   never pay. History and the Statistics chart count sessions the same way.
+  Credits an hour shows once you've played 15 minutes (on the mini window
+  too): before then, a single kill swings it by millions.
 - **Mission slots** used, against the game's limit of 20.
 - **Ready to hand in**: finished missions grouped by station, in route order
   (nearest first, then nearest from each stop), with light years per leg.

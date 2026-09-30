@@ -983,6 +983,10 @@ const colM = (n) => ((n || 0) < 50000 ? "<0.1M" : `${((n || 0) / 1e6).toFixed(1)
 const sessionMissions = (se) => se.missions_earned ?? se.mission_credits ?? 0;
 const missionsTip = (handed) => ` title="${esc(`What this session's kills earned in the missions they counted for, as they were made${
   handed ? `; ${cr(handed)} Cr handed in` : "; none handed in yet"}`)}"`;
+// Credits an hour waits for 15 minutes of play (stacker.py sends none before).
+const perHour = (se, fmt = cr) => (se.credits_per_hour != null && (se.kills || sessionMissions(se))
+  ? `${fmt(se.credits_per_hour)} Cr` : "—");
+const perHourTip = (se) => (se.credits_per_hour == null ? ' title="After 15 minutes of play: before then, one kill swings it by millions"' : "");
 const bonusTip = (logged, paid) => (paid && logged && paid > logged
   ? ` class="gold" title="${cr(logged)} Cr logged; worth ${cr(paid)} Cr cashed in where they were earned, with its Powerplay bounty bonus"` : "");
 // Stat-cell money, Stocks style: 41.3M, 590K. The full figure is in the tooltip.
@@ -1437,7 +1441,7 @@ function renderNow(s) {
       ...(se.bonds ? [["Combat bonds", `${cr(se.bonds)} Cr`]] : []),
       ["Missions", sessionMissions(se) ? `${cr(sessionMissions(se))} Cr` : "—", missionsTip(se.mission_credits)],
       ["Merits", se.merits ? `+${cr(se.merits)}` : "—"],
-      ["Per hour", se.kills || sessionMissions(se) ? `${cr(se.credits_per_hour)} Cr` : "—"],
+      ["Per hour", perHour(se), perHourTip(se)],
     ];
     html += `<div class="ticker">${items.map(([k, v, tip]) => `<div><span>${k}</span><b${tip || ""}>${v}</b></div>`).join("")}</div>`;
   }
@@ -1574,7 +1578,7 @@ function renderCommander(s) {
     </section>
     ${factsHTML([
       ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
-      ["Per hour", earned ? `${cr(se.credits_per_hour)} Cr` : "—"],
+      ["Per hour", perHour(se), perHourTip(se)],
       ["Bounties", bounties ? `${cr(bounties)} Cr` : "—", bonusTip(se.bounties, se.bounties_paid)],
       ["Combat bonds", se.bonds ? `${cr(se.bonds)} Cr` : "—"],
       ["Missions", sessionMissions(se) ? `${cr(sessionMissions(se))} Cr` : "—", missionsTip(se.mission_credits)],
@@ -1723,7 +1727,7 @@ function drawSessionCard(s) {
       ["Time played", dur(se.hours)],
       ["Kills", cr(se.kills)],
       ["Kills an hour", se.kills ? cr(se.kills_per_hour) : "—"],
-      ["Per hour", earned ? `${short(se.credits_per_hour)} Cr` : "—"],
+      ["Per hour", perHour(se, short)],
       ["Bounties", bounties ? `${short(bounties)} Cr` : "—", se.bounties_paid > se.bounties],
       ["Missions", sessionMissions(se) ? `${short(sessionMissions(se))} Cr` : "—"],
       se.bonds && ["Combat bonds", `${short(se.bonds)} Cr`],
@@ -1808,14 +1812,15 @@ function sessionSummary(s) {
     `${style} — session of ${new Date(se.started).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`,
     `CMDR ${s.commander || "?"} · ${dur(se.hours)} of play · ${cr(se.kills)} kills (${cr(se.kills_per_hour)} an hour)`,
     `Bounties ${cr(bounties)} Cr · Missions ${cr(sessionMissions(se))} Cr${se.bonds ? ` · Combat bonds ${cr(se.bonds)} Cr` : ""}`,
-    `${cr(se.credits_per_hour)} Cr an hour${se.merits ? ` · +${cr(se.merits)} merits` : ""}${se.crew ? ` · crew share ${cr(se.crew)} Cr` : ""}`,
+    [se.credits_per_hour != null && `${cr(se.credits_per_hour)} Cr an hour`, se.merits && `+${cr(se.merits)} merits`,
+     se.crew && `crew share ${cr(se.crew)} Cr`].filter(Boolean).join(" · "),
   ];
   const ranks = [];
   if (s.combat) ranks.push(`${s.combat.title} ${s.combat.progress}%${s.combat.gain ? ` (+${s.combat.gain}%)` : ""}`);
   if (s.imperial && s.imperial.progress != null) ranks.push(`${s.imperial.title} ${s.imperial.progress}%`);
   if (s.powerplay && s.powerplay.rank != null) ranks.push(`${s.powerplay.power} rank ${s.powerplay.rank}`);
   if (ranks.length) lines.push(ranks.join(" · "));
-  return lines.join("\n");
+  return lines.filter(Boolean).join("\n");
 }
 document.addEventListener("click", async (ev) => {
   if (!ev.target.closest("#copySummary") || !lastState || !lastState.session) return;
